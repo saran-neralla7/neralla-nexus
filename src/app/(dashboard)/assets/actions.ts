@@ -129,12 +129,14 @@ export async function deleteAsset(id: string) {
   const supabase = await createClient();
   const authUser = await getAuthUser(supabase);
 
-  // Check family ownership
-  const { data: currentEntry } = await supabase
+  // Fetch full entry for trash backup
+  const { data: currentEntry, error: fetchErr } = await supabase
     .from('assets')
-    .select('family_id')
+    .select('*')
     .eq('id', id)
     .single();
+
+  if (fetchErr || !currentEntry) throw new Error('Asset entry not found');
 
   const { data: userData } = await supabase
     .from('users')
@@ -142,10 +144,29 @@ export async function deleteAsset(id: string) {
     .eq('id', authUser.id)
     .single();
 
-  if (userData?.family_id !== currentEntry?.family_id) {
+  if (!userData?.family_id) {
+    throw new Error('Unauthorized');
+  }
+
+  if (userData.family_id !== currentEntry?.family_id) {
     throw new Error('Access denied');
   }
 
+  // Insert into trash_items
+  const { error: trashErr } = await supabase
+    .from('trash_items')
+    .insert({
+      family_id: userData.family_id,
+      resource_type: 'assets',
+      resource_id: id,
+      resource_data: currentEntry,
+      deleted_by: authUser.id,
+      deleted_at: new Date().toISOString(),
+    });
+
+  if (trashErr) throw trashErr;
+
+  // Delete from original table
   const { error } = await supabase
     .from('assets')
     .delete()
