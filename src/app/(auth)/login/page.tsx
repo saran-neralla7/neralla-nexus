@@ -14,6 +14,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(false);
   const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+  const [stage, setStage] = useState<'splash' | 'video' | 'login'>('splash');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +42,62 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  if (stage === 'splash') {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#090f0e] relative overflow-hidden">
+        {/* Glowing background shapes */}
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-[#14b8a6]/10 blur-[100px] animate-pulse" />
+        <div className="absolute w-[300px] h-[300px] rounded-full bg-[#0566d9]/10 blur-[80px] bottom-10 right-10" />
+
+        <div className="relative z-10 flex flex-col items-center gap-8 text-center max-w-md px-6 fade-in">
+          {/* Animated logo */}
+          <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-[#14b8a6] to-[#0566d9] p-[1px] shadow-[0_0_50px_rgba(79,219,200,0.15)]">
+            <div className="w-full h-full bg-[#0e1513] rounded-3xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[64px] text-[#4fdbc8] select-none animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
+                hub
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <h1 className="text-display-lg text-gradient leading-tight tracking-tight select-none" style={{ fontFamily: 'Geist, sans-serif', fontSize: '56px', fontWeight: '800' }}>NEXUS</h1>
+            <p className="text-[#859490] text-label-sm mt-2 tracking-widest uppercase text-xs">Family Operating System</p>
+          </div>
+
+          <button
+            onClick={() => setStage('video')}
+            className="mt-6 px-8 py-4 rounded-2xl bg-gradient-to-br from-[#14b8a6] to-[#0566d9] text-white font-bold tracking-wide shadow-[0_0_30px_rgba(20,184,166,0.3)] hover:shadow-[0_0_50px_rgba(20,184,166,0.5)] active:scale-95 transition-all flex items-center gap-3 border border-white/10 group cursor-pointer"
+          >
+            <span>Initialize Console</span>
+            <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">play_arrow</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'video') {
+    return (
+      <div className="h-screen w-screen bg-[#090f0e] flex items-center justify-center relative overflow-hidden">
+        <video
+          src="/welcome.mp4"
+          autoPlay
+          playsInline
+          onEnded={() => setStage('login')}
+          className="w-full h-full object-contain md:max-w-4xl"
+        />
+
+        <button
+          onClick={() => setStage('login')}
+          className="absolute bottom-8 right-8 px-6 py-3 bg-white/5 border border-white/10 text-[#4fdbc8] font-semibold rounded-xl text-xs hover:bg-white/10 active:scale-[0.98] transition-all flex items-center gap-1 cursor-pointer shadow-lg"
+        >
+          Skip Intro
+          <span className="material-symbols-outlined text-[14px]">skip_next</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
