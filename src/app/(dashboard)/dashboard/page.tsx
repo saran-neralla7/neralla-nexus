@@ -116,7 +116,7 @@ export default function DashboardPage() {
           style={{ border: '1px solid rgba(255,255,255,0.08)' }}
         />
 
-        <div className="relative z-10 p-8 md:p-10">
+        <div className="relative z-10 p-6 sm:p-8 md:p-10">
           <p
             className="text-label-sm uppercase tracking-widest mb-3"
             style={{ color: '#4fdbc8' }}
@@ -414,7 +414,7 @@ export default function DashboardPage() {
             <span className="material-symbols-outlined" style={{ color: '#ffb59e', fontSize: '20px' }}>apps</span>
             Family Modules
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { label: 'Family', icon: 'group', href: '/family', color: '#4fdbc8' },
               { label: 'Tree', icon: 'account_tree', href: '/tree', color: '#adc6ff' },
@@ -429,7 +429,7 @@ export default function DashboardPage() {
               <Link
                 key={module.label}
                 href={module.href}
-                className="flex flex-col items-center gap-2 p-3 rounded-xl transition-all active:scale-95 group"
+                className="flex flex-col items-center gap-1.5 p-2 sm:p-3 rounded-xl transition-all active:scale-95 group"
                 style={{
                   background: 'rgba(255,255,255,0.03)',
                   border: '1px solid rgba(255,255,255,0.05)',

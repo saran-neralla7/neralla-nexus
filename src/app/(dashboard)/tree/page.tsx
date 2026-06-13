@@ -518,40 +518,40 @@ export default function TreePage() {
     <div className="relative h-[calc(100vh-80px)] md:h-[calc(100vh-64px)] w-full overflow-hidden select-none bg-[#090f0e]">
       
       {/* 1. Header and Quick Actions */}
-      <div className="absolute top-6 left-6 z-10 space-y-2 pointer-events-auto">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#adc6ff]/10 border border-[#adc6ff]/20">
-            <span className="material-symbols-outlined text-[#adc6ff]" style={{ fontVariationSettings: "'FILL' 1" }}>
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10 space-y-2 pointer-events-auto">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-[#adc6ff]/10 border border-[#adc6ff]/20">
+            <span className="material-symbols-outlined text-[#adc6ff] text-[18px] sm:text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>
               account_tree
             </span>
           </div>
           <div>
-            <h1 className="text-headline-md font-bold text-[#dde4e1]">Family Tree</h1>
-            <p className="text-body-sm text-[#859490]">Build and visualise family lines</p>
+            <h1 className="text-headline-sm sm:text-headline-md font-bold text-[#dde4e1] leading-tight">Family Tree</h1>
+            <p className="text-[11px] sm:text-body-sm text-[#859490]">Build and visualise family lines</p>
           </div>
         </div>
       </div>
 
-      <div className="absolute top-6 right-6 z-10 flex items-center gap-2 pointer-events-auto">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
         {/* Auto Arrange */}
         <button
           onClick={handleAutoLayout}
           disabled={isPending}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-label-sm font-medium transition-all bg-white/5 border border-white/8 text-[#bbcac6] hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-label-sm font-medium transition-all bg-white/5 border border-white/8 text-[#bbcac6] hover:bg-white/10 hover:text-white"
         >
-          <span className="material-symbols-outlined text-[18px]">magic_button</span>
-          <span>{isPending ? 'Arranging...' : 'Auto Layout'}</span>
+          <span className="material-symbols-outlined text-[16px] sm:text-[18px]">magic_button</span>
+          <span className="hidden sm:inline">{isPending ? 'Arranging...' : 'Auto Layout'}</span>
         </button>
 
         {/* Unmapped count / Sidebar toggle */}
         <button
           onClick={() => setShowUnmappedSidebar(!showUnmappedSidebar)}
-          className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-label-sm font-medium transition-all bg-white/5 border border-white/8 text-[#bbcac6] hover:bg-white/10 hover:text-white"
+          className="relative flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-label-sm font-medium transition-all bg-white/5 border border-white/8 text-[#bbcac6] hover:bg-white/10 hover:text-white"
         >
-          <span className="material-symbols-outlined text-[18px]">group_add</span>
-          <span>Add Member</span>
+          <span className="material-symbols-outlined text-[16px] sm:text-[18px]">group_add</span>
+          <span className="hidden sm:inline">Add Member</span>
           {unmappedMembers.length > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#14b8a6] text-[9px] text-white flex items-center justify-center font-bold">
+            <span className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#14b8a6] text-[8px] sm:text-[9px] text-white flex items-center justify-center font-bold">
               {unmappedMembers.length}
             </span>
           )}
@@ -559,10 +559,10 @@ export default function TreePage() {
 
         <button
           onClick={() => setShowAddMemberModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-label-sm font-semibold transition-all bg-[#4fdbc8] text-[#003731] hover:bg-[#4fdbc8]/90"
+          className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-label-sm font-semibold transition-all bg-[#4fdbc8] text-[#003731] hover:bg-[#4fdbc8]/90"
         >
-          <span className="material-symbols-outlined text-[18px]">person_add</span>
-          <span>New Profile</span>
+          <span className="material-symbols-outlined text-[16px] sm:text-[18px]">person_add</span>
+          <span className="hidden sm:inline">New Profile</span>
         </button>
       </div>
 
