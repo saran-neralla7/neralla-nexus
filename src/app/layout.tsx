@@ -74,6 +74,20 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* PWA defer install prompt script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                window.deferredPrompt = e;
+                if (window.onBeforeInstallPrompt) {
+                  window.onBeforeInstallPrompt(e);
+                }
+              });
+            `,
+          }}
+        />
       </head>
       <body
         className={`${inter.variable} ${geistSans.variable} ${jetbrainsMono.variable} antialiased`}

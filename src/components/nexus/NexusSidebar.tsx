@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { User } from '@/types';
+import { usePWA } from '@/hooks/usePWA';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: 'home' },
@@ -33,6 +34,7 @@ interface NexusSidebarProps {
 
 export default function NexusSidebar({ user, onClose }: NexusSidebarProps) {
   const pathname = usePathname();
+  const { isInstallable, installApp } = usePWA();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/');
@@ -145,6 +147,19 @@ export default function NexusSidebar({ user, onClose }: NexusSidebarProps) {
           </Link>
         )}
       </nav>
+
+      {/* PWA Install Action */}
+      {isInstallable && (
+        <div className="px-4 py-2 flex flex-col gap-1">
+          <button
+            onClick={installApp}
+            className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl border border-[#4fdbc8]/20 bg-[#4fdbc8]/5 hover:bg-[#4fdbc8]/15 text-[#4fdbc8] hover:text-[#71f8e4] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-[0_0_15px_rgba(79,219,200,0.04)] group"
+          >
+            <span className="material-symbols-outlined text-[20px] animate-pulse">download_for_offline</span>
+            <span className="text-body-sm font-semibold select-none">Install App</span>
+          </button>
+        </div>
+      )}
 
       {/* User Profile */}
       <div

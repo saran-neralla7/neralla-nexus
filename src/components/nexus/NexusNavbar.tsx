@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { User } from '@/types';
+import { usePWA } from '@/hooks/usePWA';
 
 interface NexusNavbarProps {
   user: User | null;
@@ -22,6 +23,7 @@ export default function NexusNavbar({
 }: NexusNavbarProps) {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { isInstallable, installApp } = usePWA();
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -93,6 +95,17 @@ export default function NexusNavbar({
 
       {/* Right — Notifications + User */}
       <div className="flex items-center gap-2">
+        {/* PWA Install on Mobile/Tablet */}
+        {isInstallable && (
+          <button
+            onClick={installApp}
+            className="p-2 rounded-xl transition-colors text-[#4fdbc8]"
+            aria-label="Install App"
+          >
+            <span className="material-symbols-outlined animate-pulse">download_for_offline</span>
+          </button>
+        )}
+
         {/* Search on mobile */}
         <button
           className="md:hidden p-2 rounded-xl transition-colors"
