@@ -44,36 +44,14 @@ export default function NexusSidebar({ user, onClose }: NexusSidebarProps) {
     >
       {/* Logo */}
       <div
-        className="flex items-center gap-3 px-5 py-6"
+        className="flex items-center justify-center px-4 py-6"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
       >
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #14b8a6, #0566d9)' }}
-        >
-          <span
-            className="material-symbols-outlined text-white"
-            style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}
-          >
-            hub
-          </span>
-        </div>
-        <div>
-          <p
-            className="font-semibold"
-            style={{
-              fontFamily: 'Geist, sans-serif',
-              fontSize: '15px',
-              color: '#4fdbc8',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Neralla Nexus
-          </p>
-          <p className="text-label-sm" style={{ color: '#859490' }}>
-            Family OS
-          </p>
-        </div>
+        <img
+          src="/logo.png"
+          alt="Neralla Nexus Logo"
+          className="w-40 h-auto object-contain"
+        />
       </div>
 
       {/* Main Navigation */}

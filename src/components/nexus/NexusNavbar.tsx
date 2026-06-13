@@ -54,30 +54,13 @@ export default function NexusNavbar({
         </button>
         <Link
           href="/dashboard"
-          className="flex items-center gap-2"
+          className="flex items-center"
         >
-          <div
-            className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #14b8a6, #0566d9)' }}
-          >
-            <span
-              className="material-symbols-outlined text-white"
-              style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}
-            >
-              hub
-            </span>
-          </div>
-          <span
-            className="font-semibold"
-            style={{
-              fontFamily: 'Geist, sans-serif',
-              fontSize: '18px',
-              color: '#4fdbc8',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Neralla Nexus
-          </span>
+          <img
+            src="/logo.png"
+            alt="Neralla Nexus Logo"
+            className="h-10 w-auto object-contain"
+          />
         </Link>
       </div>
 

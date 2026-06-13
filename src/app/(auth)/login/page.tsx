@@ -88,17 +88,12 @@ function LoginForm() {
 
           <div className="relative z-10 max-w-lg fade-in" style={{ animationDelay: '0.2s' }}>
             {/* Logo */}
-            <div className="flex items-center gap-3 mb-8">
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #14b8a6, #0566d9)' }}
-              >
-                <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>hub</span>
-              </div>
-              <div>
-                <p className="text-headline-sm text-white font-bold" style={{ fontFamily: 'Geist, sans-serif' }}>Neralla Nexus</p>
-                <p className="text-label-sm" style={{ color: '#859490' }}>Family OS</p>
-              </div>
+            <div className="mb-8 flex justify-start">
+              <img
+                src="/logo.png"
+                alt="Neralla Nexus Logo"
+                className="w-48 h-auto object-contain"
+              />
             </div>
 
             <h1
@@ -149,16 +144,12 @@ function LoginForm() {
             className="w-full max-w-[440px] p-8 md:p-10 rounded-[32px] flex flex-col fade-in glass-modal inner-glow"
           >
             {/* Mobile Logo */}
-            <div className="md:hidden flex items-center justify-center gap-3 mb-8">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #14b8a6, #0566d9)' }}
-              >
-                <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>hub</span>
-              </div>
-              <div className="text-center">
-                <p className="font-bold text-white" style={{ fontFamily: 'Geist, sans-serif', fontSize: '20px' }}>Neralla Nexus</p>
-              </div>
+            <div className="md:hidden flex items-center justify-center mb-8">
+              <img
+                src="/logo.png"
+                alt="Neralla Nexus Logo"
+                className="w-40 h-auto object-contain"
+              />
             </div>
 
             {/* Header */}
