@@ -89,3 +89,22 @@ export function isExpiringSoon(date: string | Date, thresholdDays = 30): boolean
 export function isExpired(date: string | Date): boolean {
   return daysUntil(date) < 0;
 }
+
+export const AVATAR_COLORS = [
+  'linear-gradient(135deg, #14b8a6, #0566d9)',
+  'linear-gradient(135deg, #adc6ff, #0566d9)',
+  'linear-gradient(135deg, #ffb59e, #f38764)',
+  'linear-gradient(135deg, #a78bfa, #7c3aed)',
+  'linear-gradient(135deg, #f43f5e, #be123c)',
+  'linear-gradient(135deg, #22c55e, #15803d)',
+];
+
+export function getAvatarStyle(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
+}
+

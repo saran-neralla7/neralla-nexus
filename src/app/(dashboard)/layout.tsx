@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { useNotifications } from '@/hooks/useNotifications';
 import NexusSidebar from '@/components/nexus/NexusSidebar';
 import NexusNavbar from '@/components/nexus/NexusNavbar';
 import MobileDock from '@/components/nexus/MobileDock';
+import GlobalSearch from '@/components/nexus/GlobalSearch';
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,19 @@ export default function DashboardLayout({
   const { user, loading } = useUser();
   const { unreadCount } = useNotifications(user?.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Keyboard shortcut listener for Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (loading) {
     return (
@@ -76,6 +90,7 @@ export default function DashboardLayout({
           user={user}
           unreadCount={unreadCount}
           onMenuClick={() => setSidebarOpen(true)}
+          onSearchClick={() => setSearchOpen(true)}
         />
 
         {/* Page Content */}
@@ -86,6 +101,10 @@ export default function DashboardLayout({
         {/* Mobile Bottom Dock */}
         <MobileDock />
       </div>
+
+      {/* Global Command Search Overlay */}
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }
+

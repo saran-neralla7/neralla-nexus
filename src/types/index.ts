@@ -320,3 +320,18 @@ export interface SystemFeature {
   module: string;
   completedAt?: string;
 }
+
+export interface FamilyTreeNode {
+  id: string;
+  family_id: string;
+  member_id: string;
+  parent_id?: string | null;
+  relationship_to_parent?: string | null;
+  position_x: number;
+  position_y: number;
+  metadata?: {
+    spouse_node_id?: string | null;
+    [key: string]: any;
+  };
+}
+
