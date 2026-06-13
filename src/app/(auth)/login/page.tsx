@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -15,6 +15,24 @@ function LoginForm() {
   const [rememberDevice, setRememberDevice] = useState(false);
   const redirectTo = searchParams.get('redirectTo') || '/dashboard';
   const [stage, setStage] = useState<'splash' | 'video' | 'login'>('splash');
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleLaunch = () => {
+    setStage('video');
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.error("Autoplay prevented, retrying muted:", error);
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(err => console.error("Muted play failed:", err));
+          }
+        });
+      }
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,67 +61,71 @@ function LoginForm() {
     }
   };
 
-  if (stage === 'splash') {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#090f0e] relative overflow-hidden">
-        {/* Glowing background shapes */}
-        <div className="absolute w-[500px] h-[500px] rounded-full bg-[#14b8a6]/10 blur-[100px] animate-pulse" />
-        <div className="absolute w-[300px] h-[300px] rounded-full bg-[#0566d9]/10 blur-[80px] bottom-10 right-10" />
+  return (
+    <div className="h-screen w-screen relative overflow-hidden" style={{ backgroundColor: '#090f0e' }}>
+      {/* 1. Splash Screen */}
+      {stage === 'splash' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#090f0e] z-20 overflow-hidden">
+          {/* Glowing background shapes */}
+          <div className="absolute w-[500px] h-[500px] rounded-full bg-[#14b8a6]/10 blur-[100px] animate-pulse" />
+          <div className="absolute w-[300px] h-[300px] rounded-full bg-[#0566d9]/10 blur-[80px] bottom-10 right-10" />
 
-        <div className="relative z-10 flex flex-col items-center gap-8 text-center max-w-md px-6 fade-in">
-          {/* Animated logo */}
-          <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-[#14b8a6] to-[#0566d9] p-[1px] shadow-[0_0_50px_rgba(79,219,200,0.15)]">
-            <div className="w-full h-full bg-[#0e1513] rounded-3xl flex items-center justify-center">
-              <span className="material-symbols-outlined text-[64px] text-[#4fdbc8] select-none animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
-                hub
-              </span>
+          <div className="relative z-10 flex flex-col items-center gap-8 text-center max-w-md px-6 fade-in">
+            {/* Animated logo */}
+            <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-[#14b8a6] to-[#0566d9] p-[1px] shadow-[0_0_50px_rgba(79,219,200,0.15)]">
+              <div className="w-full h-full bg-[#0e1513] rounded-3xl flex items-center justify-center">
+                <span className="material-symbols-outlined text-[64px] text-[#4fdbc8] select-none animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  hub
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <h1 className="text-display-lg text-gradient leading-tight tracking-tight select-none" style={{ fontFamily: 'Geist, sans-serif', fontSize: '56px', fontWeight: '800' }}>NEXUS</h1>
-            <p className="text-[#859490] text-label-sm mt-2 tracking-widest uppercase text-xs">Family Operating System</p>
-          </div>
+            <div>
+              <h1 className="text-display-lg text-gradient leading-tight tracking-tight select-none" style={{ fontFamily: 'Geist, sans-serif', fontSize: '56px', fontWeight: '800' }}>NEXUS</h1>
+              <p className="text-[#859490] text-label-sm mt-2 tracking-widest uppercase text-xs">Family Operating System</p>
+            </div>
 
-          <button
-            onClick={() => setStage('video')}
-            className="mt-6 px-8 py-4 rounded-2xl bg-gradient-to-br from-[#14b8a6] to-[#0566d9] text-white font-bold tracking-wide shadow-[0_0_30px_rgba(20,184,166,0.3)] hover:shadow-[0_0_50px_rgba(20,184,166,0.5)] active:scale-95 transition-all flex items-center gap-3 border border-white/10 group cursor-pointer"
-          >
-            <span>Initialize Console</span>
-            <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">play_arrow</span>
-          </button>
+            <button
+              onClick={handleLaunch}
+              className="mt-6 px-8 py-4 rounded-2xl bg-gradient-to-br from-[#14b8a6] to-[#0566d9] text-white font-bold tracking-wide shadow-[0_0_30px_rgba(20,184,166,0.3)] hover:shadow-[0_0_50px_rgba(20,184,166,0.5)] active:scale-95 transition-all flex items-center gap-3 border border-white/10 group cursor-pointer"
+            >
+              <span>Initialize Console</span>
+              <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">play_arrow</span>
+            </button>
+          </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  if (stage === 'video') {
-    return (
-      <div className="h-screen w-screen bg-[#090f0e] flex items-center justify-center relative overflow-hidden">
+      {/* 2. Video Player Overlay (always in DOM to allow user gesture to play audio) */}
+      <div
+        className={`fixed inset-0 bg-[#090f0e] flex items-center justify-center transition-all duration-500 z-30 ${
+          stage === 'video' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
         <video
+          ref={videoRef}
           src="/welcome.mp4"
-          autoPlay
           playsInline
           onEnded={() => setStage('login')}
           className="w-full h-full object-contain md:max-w-4xl"
         />
 
         <button
-          onClick={() => setStage('login')}
-          className="absolute bottom-8 right-8 px-6 py-3 bg-white/5 border border-white/10 text-[#4fdbc8] font-semibold rounded-xl text-xs hover:bg-white/10 active:scale-[0.98] transition-all flex items-center gap-1 cursor-pointer shadow-lg"
+          onClick={() => {
+            if (videoRef.current) {
+              videoRef.current.pause();
+            }
+            setStage('login');
+          }}
+          className="absolute bottom-8 right-8 px-6 py-3 bg-white/5 border border-white/10 text-[#4fdbc8] font-semibold rounded-xl text-xs hover:bg-white/10 active:scale-[0.98] transition-all flex items-center gap-1 cursor-pointer shadow-lg z-40"
         >
           Skip Intro
           <span className="material-symbols-outlined text-[14px]">skip_next</span>
         </button>
       </div>
-    );
-  }
 
-  return (
-    <div
-      className="h-screen flex items-center justify-center overflow-hidden relative"
-      style={{ backgroundColor: '#090f0e' }}
-    >
+      {/* 3. Main Login Card Container */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
       {/* Ambient WebGL Background */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -377,6 +399,7 @@ function LoginForm() {
           </div>
         </section>
       </main>
+      </div>
     </div>
   );
 }
