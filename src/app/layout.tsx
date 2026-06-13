@@ -74,10 +74,17 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        {/* PWA defer install prompt script */}
+        {/* PWA script for SW registration and install prompt deferral */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Nexus SW registered from layout:', reg.scope))
+                    .catch(err => console.error('Nexus SW registration failed from layout:', err));
+                });
+              }
               window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 window.deferredPrompt = e;

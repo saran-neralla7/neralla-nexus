@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useUser';
@@ -27,10 +27,36 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
+  
+  const [showMorningWish, setShowMorningWish] = useState(false);
+  const [playingWish, setPlayingWish] = useState(false);
+  const wishVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 60000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    // Read search params inside useEffect to avoid Next.js Suspense compilation requirement
+    const searchParams = new URLSearchParams(window.location.search);
+    const testWish = searchParams.get('testWish') === 'true';
+
+    const checkMorningWish = () => {
+      const now = new Date();
+      const h = now.getHours();
+      const isMorning = h >= 5 && h < 12; // 5 AM to 12 PM
+
+      const todayStr = now.toISOString().split('T')[0];
+      const lastWished = localStorage.getItem('nexus_morning_wish_last_date');
+
+      if (testWish || (isMorning && lastWished !== todayStr)) {
+        setShowMorningWish(true);
+      }
+    };
+
+    const timeout = setTimeout(checkMorningWish, 1000);
+    return () => clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
@@ -169,6 +195,21 @@ export default function DashboardPage() {
               <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>sos</span>
               <span className="text-label-sm">Emergency Hub</span>
             </Link>
+
+            <button
+              onClick={() => {
+                setShowMorningWish(true);
+                setPlayingWish(false);
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all hover:opacity-85 cursor-pointer text-[#4fdbc8]"
+              style={{
+                background: 'rgba(79,219,200,0.1)',
+                border: '1px solid rgba(79,219,200,0.2)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>sunny</span>
+              <span className="text-label-sm">Play Morning Wish</span>
+            </button>
           </div>
         </div>
       </section>
@@ -447,6 +488,109 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* Morning Wish Video Overlay */}
+      {showMorningWish && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#090f0e]/95 backdrop-blur-md transition-opacity duration-500"
+        >
+          <div className="relative z-10 max-w-xl w-full mx-4 glass-modal p-6 rounded-[28px] border border-white/10 flex flex-col items-center gap-6 shadow-2xl text-center">
+            {/* Glowing background */}
+            <div className="absolute inset-0 w-full h-full rounded-[28px] overflow-hidden -z-10">
+              <div className="absolute w-[200px] h-[200px] rounded-full bg-[#14b8a6]/10 blur-[50px] -top-10 -left-10 animate-pulse" />
+              <div className="absolute w-[150px] h-[150px] rounded-full bg-[#0566d9]/10 blur-[40px] -bottom-10 -right-10" />
+            </div>
+
+            {!playingWish ? (
+              <div className="flex flex-col items-center gap-5 py-4">
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl font-bold"
+                  style={{
+                    background: 'linear-gradient(135deg, #14b8a6, #0566d9)',
+                    boxShadow: '0 0 30px rgba(20,184,166,0.3)',
+                  }}
+                >
+                  <span className="material-symbols-outlined text-[36px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    sunny
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-headline-md text-[#dde4e1] font-semibold">Good Morning, Family!</h2>
+                  <p className="text-body-sm text-[#859490] mt-2 max-w-sm">
+                    Saran has a morning message for you. Open it to start your day.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={() => {
+                      setPlayingWish(true);
+                      setTimeout(() => {
+                        if (wishVideoRef.current) {
+                          wishVideoRef.current.play().catch((err) => {
+                            console.error("Playback error:", err);
+                          });
+                        }
+                      }, 100);
+                    }}
+                    className="px-6 py-3 rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#0566d9] text-white font-semibold text-sm hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 cursor-pointer shadow-lg"
+                  >
+                    <span className="material-symbols-outlined text-lg">play_arrow</span>
+                    Receive Message
+                  </button>
+                  <button
+                    onClick={() => {
+                      const todayStr = new Date().toISOString().split('T')[0];
+                      localStorage.setItem('nexus_morning_wish_last_date', todayStr);
+                      setShowMorningWish(false);
+                    }}
+                    className="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-[#859490] hover:text-[#dde4e1] hover:bg-white/10 text-sm active:scale-95 transition-all cursor-pointer"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full flex flex-col items-center gap-4">
+                <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black/40 border border-white/5 relative">
+                  <video
+                    ref={wishVideoRef}
+                    src="/after-login-welcome.mp4"
+                    playsInline
+                    onEnded={() => {
+                      const todayStr = new Date().toISOString().split('T')[0];
+                      localStorage.setItem('nexus_morning_wish_last_date', todayStr);
+                      setShowMorningWish(false);
+                      setPlayingWish(false);
+                    }}
+                    onError={() => {
+                      const todayStr = new Date().toISOString().split('T')[0];
+                      localStorage.setItem('nexus_morning_wish_last_date', todayStr);
+                      setShowMorningWish(false);
+                      setPlayingWish(false);
+                    }}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    if (wishVideoRef.current) {
+                      wishVideoRef.current.pause();
+                    }
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    localStorage.setItem('nexus_morning_wish_last_date', todayStr);
+                    setShowMorningWish(false);
+                    setPlayingWish(false);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[#859490] hover:text-[#4fdbc8] text-xs hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  Skip Message
+                  <span className="material-symbols-outlined text-[14px]">skip_next</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

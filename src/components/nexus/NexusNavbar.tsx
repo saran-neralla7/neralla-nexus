@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { User } from '@/types';
 import { usePWA } from '@/hooks/usePWA';
+import NexusModal from '@/components/nexus/NexusModal';
 
 interface NexusNavbarProps {
   user: User | null;
@@ -23,7 +24,8 @@ export default function NexusNavbar({
 }: NexusNavbarProps) {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { isInstallable, installApp } = usePWA();
+  const [showIOSModal, setShowIOSModal] = useState(false);
+  const { isInstallable, isIOS, installApp } = usePWA();
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -98,7 +100,13 @@ export default function NexusNavbar({
         {/* PWA Install on Mobile/Tablet */}
         {isInstallable && (
           <button
-            onClick={installApp}
+            onClick={async () => {
+              if (isIOS) {
+                setShowIOSModal(true);
+              } else {
+                await installApp();
+              }
+            }}
             className="p-2 rounded-xl transition-colors text-[#4fdbc8]"
             aria-label="Install App"
           >
@@ -204,6 +212,56 @@ export default function NexusNavbar({
           )}
         </div>
       </div>
+
+      <NexusModal
+        isOpen={showIOSModal}
+        onClose={() => setShowIOSModal(false)}
+        title="Install Neralla Nexus"
+        description="Add the app to your Home Screen for the full Family OS experience."
+        size="sm"
+      >
+        <div className="flex flex-col gap-6 text-[#dde4e1]">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-[#14b8a6]/10 text-[#4fdbc8] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                1
+              </div>
+              <p className="text-body-sm pt-1">
+                Tap the <strong className="text-white">Share</strong> button{' '}
+                <span className="material-symbols-outlined text-[18px] align-middle text-[#4fdbc8]">ios_share</span>{' '}
+                in Safari's bottom toolbar.
+              </p>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-[#14b8a6]/10 text-[#4fdbc8] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                2
+              </div>
+              <p className="text-body-sm pt-1">
+                Scroll down the share menu and select{' '}
+                <strong className="text-white">Add to Home Screen</strong>{' '}
+                <span className="material-symbols-outlined text-[18px] align-middle text-[#4fdbc8]">add_box</span>.
+              </p>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-[#14b8a6]/10 text-[#4fdbc8] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                3
+              </div>
+              <p className="text-body-sm pt-1">
+                Tap <strong className="text-white">Add</strong> in the top-right corner to complete the installation.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowIOSModal(false)}
+            className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all text-sm font-semibold cursor-pointer text-[#4fdbc8]"
+          >
+            Got it
+          </button>
+        </div>
+      </NexusModal>
     </header>
   );
 }

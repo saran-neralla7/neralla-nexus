@@ -14,6 +14,7 @@ export function usePWA() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     // 1. Register Service Worker
@@ -30,14 +31,21 @@ export function usePWA() {
 
     // 2. Check if app is already running in standalone/installed mode
     if (typeof window !== 'undefined') {
+      const userAgent = window.navigator.userAgent || window.navigator.vendor || (window as any).opera;
+      const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) || 
+        (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true;
 
+      setIsIOS(isIOSDevice);
       setIsInstalled(isStandalone);
 
-      // Check if prompt was already captured by the head script
-      if (window.deferredPrompt) {
+      // On iOS, beforeinstallprompt never fires. We make it installable if it's iOS and not already standalone!
+      if (isIOSDevice && !isStandalone) {
+        setIsInstallable(true);
+      } else if (window.deferredPrompt) {
         setInstallPrompt(window.deferredPrompt);
         setIsInstallable(true);
       }
@@ -97,5 +105,5 @@ export function usePWA() {
     return false;
   };
 
-  return { isInstallable, isInstalled, installApp };
+  return { isInstallable, isInstalled, isIOS, installApp };
 }

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { User } from '@/types';
 import { usePWA } from '@/hooks/usePWA';
+import { useState } from 'react';
+import NexusModal from '@/components/nexus/NexusModal';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: 'home' },
@@ -34,7 +36,8 @@ interface NexusSidebarProps {
 
 export default function NexusSidebar({ user, onClose }: NexusSidebarProps) {
   const pathname = usePathname();
-  const { isInstallable, installApp } = usePWA();
+  const [showIOSModal, setShowIOSModal] = useState(false);
+  const { isInstallable, isIOS, installApp } = usePWA();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/');
@@ -152,7 +155,13 @@ export default function NexusSidebar({ user, onClose }: NexusSidebarProps) {
       {isInstallable && (
         <div className="px-4 py-2 flex flex-col gap-1">
           <button
-            onClick={installApp}
+            onClick={async () => {
+              if (isIOS) {
+                setShowIOSModal(true);
+              } else {
+                await installApp();
+              }
+            }}
             className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl border border-[#4fdbc8]/20 bg-[#4fdbc8]/5 hover:bg-[#4fdbc8]/15 text-[#4fdbc8] hover:text-[#71f8e4] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-[0_0_15px_rgba(79,219,200,0.04)] group"
           >
             <span className="material-symbols-outlined text-[20px] animate-pulse">download_for_offline</span>
@@ -195,6 +204,56 @@ export default function NexusSidebar({ user, onClose }: NexusSidebarProps) {
           </span>
         </div>
       </div>
+
+      <NexusModal
+        isOpen={showIOSModal}
+        onClose={() => setShowIOSModal(false)}
+        title="Install Neralla Nexus"
+        description="Add the app to your Home Screen for the full Family OS experience."
+        size="sm"
+      >
+        <div className="flex flex-col gap-6 text-[#dde4e1]">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-[#14b8a6]/10 text-[#4fdbc8] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                1
+              </div>
+              <p className="text-body-sm pt-1">
+                Tap the <strong className="text-white">Share</strong> button{' '}
+                <span className="material-symbols-outlined text-[18px] align-middle text-[#4fdbc8]">ios_share</span>{' '}
+                in Safari's bottom toolbar.
+              </p>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-[#14b8a6]/10 text-[#4fdbc8] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                2
+              </div>
+              <p className="text-body-sm pt-1">
+                Scroll down the share menu and select{' '}
+                <strong className="text-white">Add to Home Screen</strong>{' '}
+                <span className="material-symbols-outlined text-[18px] align-middle text-[#4fdbc8]">add_box</span>.
+              </p>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-8 h-8 rounded-full bg-[#14b8a6]/10 text-[#4fdbc8] flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                3
+              </div>
+              <p className="text-body-sm pt-1">
+                Tap <strong className="text-white">Add</strong> in the top-right corner to complete the installation.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowIOSModal(false)}
+            className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all text-sm font-semibold cursor-pointer text-[#4fdbc8]"
+          >
+            Got it
+          </button>
+        </div>
+      </NexusModal>
     </aside>
   );
 }
