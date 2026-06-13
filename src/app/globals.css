@@ -1,0 +1,401 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================
+   NERALLA NEXUS — DESIGN SYSTEM
+   Based on approved Stitch design
+   ============================================ */
+
+@theme inline {
+  /* Nexus Color System */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+  --font-heading: var(--font-geist);
+
+  /* Stitch Design Tokens */
+  --color-primary: var(--nx-primary);
+  --color-primary-foreground: var(--nx-on-primary);
+  --color-secondary: var(--nx-secondary);
+  --color-secondary-foreground: var(--nx-on-secondary);
+  --color-accent: var(--nx-tertiary);
+  --color-accent-foreground: var(--nx-on-tertiary);
+  --color-destructive: var(--nx-error);
+  --color-muted: var(--nx-surface-container);
+  --color-muted-foreground: var(--nx-on-surface-variant);
+  --color-card: var(--nx-surface-container);
+  --color-card-foreground: var(--nx-on-surface);
+  --color-popover: var(--nx-surface-container-high);
+  --color-popover-foreground: var(--nx-on-surface);
+  --color-border: var(--nx-outline-variant);
+  --color-input: var(--nx-surface-container-high);
+  --color-ring: var(--nx-primary);
+
+  /* Radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-full: 9999px;
+  --radius: 0.5rem;
+
+  /* Sidebar */
+  --color-sidebar: var(--nx-surface-container-low);
+  --color-sidebar-foreground: var(--nx-on-surface);
+  --color-sidebar-primary: var(--nx-primary);
+  --color-sidebar-primary-foreground: var(--nx-on-primary);
+  --color-sidebar-accent: rgba(255, 255, 255, 0.05);
+  --color-sidebar-accent-foreground: var(--nx-on-surface);
+  --color-sidebar-border: rgba(255, 255, 255, 0.05);
+  --color-sidebar-ring: var(--nx-primary);
+
+  /* Charts */
+  --color-chart-1: var(--nx-primary);
+  --color-chart-2: var(--nx-secondary);
+  --color-chart-3: var(--nx-tertiary);
+  --color-chart-4: #22d3ee;
+  --color-chart-5: #a78bfa;
+}
+
+/* ============================================
+   NERALLA NEXUS DARK THEME (DEFAULT)
+   ============================================ */
+:root {
+  color-scheme: dark;
+
+  /* Surface Stack — Deep Space */
+  --nx-background:               #090f0e;
+  --nx-surface:                  #0e1513;
+  --nx-surface-dim:              #0e1513;
+  --nx-surface-bright:           #343b39;
+  --nx-surface-container-lowest: #090f0e;
+  --nx-surface-container-low:    #161d1b;
+  --nx-surface-container:        #1a211f;
+  --nx-surface-container-high:   #252b2a;
+  --nx-surface-container-highest:#2f3634;
+  --nx-surface-variant:          #2f3634;
+
+  /* On-Surface */
+  --nx-on-surface:               #dde4e1;
+  --nx-on-surface-variant:       #bbcac6;
+  --nx-inverse-surface:          #dde4e1;
+  --nx-inverse-on-surface:       #2b3230;
+
+  /* Outlines */
+  --nx-outline:                  #859490;
+  --nx-outline-variant:          #3c4947;
+
+  /* Primary — Teal */
+  --nx-primary:                  #4fdbc8;
+  --nx-on-primary:               #003731;
+  --nx-primary-container:        #14b8a6;
+  --nx-on-primary-container:     #00423b;
+  --nx-inverse-primary:          #006b5f;
+  --nx-primary-fixed:            #71f8e4;
+  --nx-primary-fixed-dim:        #4fdbc8;
+  --nx-on-primary-fixed:         #00201c;
+  --nx-on-primary-fixed-variant: #005048;
+  --nx-surface-tint:             #4fdbc8;
+
+  /* Secondary — Blue */
+  --nx-secondary:                #adc6ff;
+  --nx-on-secondary:             #002e6a;
+  --nx-secondary-container:      #0566d9;
+  --nx-on-secondary-container:   #e6ecff;
+  --nx-secondary-fixed:          #d8e2ff;
+  --nx-secondary-fixed-dim:      #adc6ff;
+  --nx-on-secondary-fixed:       #001a42;
+  --nx-on-secondary-fixed-variant: #004395;
+
+  /* Tertiary — Warm (Violet/Peach) */
+  --nx-tertiary:                 #ffb59e;
+  --nx-on-tertiary:              #5e1800;
+  --nx-tertiary-container:       #f38764;
+  --nx-on-tertiary-container:    #6c2106;
+  --nx-tertiary-fixed:           #ffdbd0;
+  --nx-tertiary-fixed-dim:       #ffb59e;
+  --nx-on-tertiary-fixed:        #3a0b00;
+  --nx-on-tertiary-fixed-variant: #7c2d11;
+
+  /* Error */
+  --nx-error:                    #ffb4ab;
+  --nx-on-error:                 #690005;
+  --nx-error-container:          #93000a;
+  --nx-on-error-container:       #ffdad6;
+
+  /* Background alias */
+  --background: var(--nx-background);
+  --foreground: var(--nx-on-surface);
+}
+
+/* Light Mode (Supported but not default) */
+.light {
+  color-scheme: light;
+  --nx-background:               #f0faf8;
+  --nx-surface:                  #f5faf9;
+  --nx-surface-container-low:    #eef4f2;
+  --nx-surface-container:        #e8eeed;
+  --nx-surface-container-high:   #e2e9e7;
+  --nx-on-surface:               #161d1b;
+  --nx-on-surface-variant:       #3c4947;
+  --nx-primary:                  #006b5f;
+  --nx-on-primary:               #ffffff;
+  --nx-primary-container:        #9ef2de;
+  --nx-outline:                  #6a7975;
+  --nx-outline-variant:          #bbc9c5;
+  --background: var(--nx-background);
+  --foreground: var(--nx-on-surface);
+}
+
+/* ============================================
+   GLASS EFFECT UTILITIES
+   ============================================ */
+
+@layer utilities {
+  .glass {
+    background: rgba(26, 33, 31, 0.4);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(20, 184, 166, 0.25);
+  }
+
+  .glass-modal {
+    background: rgba(26, 33, 31, 0.85);
+    backdrop-filter: blur(64px);
+    -webkit-backdrop-filter: blur(64px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 64px 64px rgba(20, 184, 166, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-nav {
+    background: rgba(14, 21, 19, 0.85);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-sidebar {
+    background: rgba(22, 29, 27, 0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .inner-glow {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .input-glass {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+  }
+
+  .input-glass:focus {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: #4fdbc8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(79, 219, 200, 0.15);
+  }
+
+  .teal-glow {
+    box-shadow: 0 0 20px rgba(79, 219, 200, 0.3);
+  }
+
+  .premium-gradient {
+    background: linear-gradient(135deg, #14b8a6 0%, #0566d9 100%);
+  }
+
+  .teal-gradient {
+    background: linear-gradient(135deg, #4fdbc8, #14b8a6);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #4fdbc8, #adc6ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .vault-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Animations */
+  .fade-in {
+    animation: nexus-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .slide-up {
+    animation: nexus-slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .pulse-teal {
+    animation: nexus-pulse-teal 2s ease-in-out infinite;
+  }
+}
+
+@keyframes nexus-fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nexus-slide-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nexus-pulse-teal {
+  0%, 100% { box-shadow: 0 0 10px rgba(79, 219, 200, 0.3); }
+  50%       { box-shadow: 0 0 25px rgba(79, 219, 200, 0.6); }
+}
+
+/* ============================================
+   TYPOGRAPHY — Stitch Scale
+   ============================================ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    background-color: #090f0e;
+    color: #dde4e1;
+    font-family: var(--font-inter), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(79, 219, 200, 0.4);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-geist), system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Display */
+  .text-display-lg {
+    font-family: var(--font-geist);
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+  }
+
+  /* Headlines */
+  .text-headline-lg {
+    font-family: var(--font-geist);
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .text-headline-lg-mobile {
+    font-family: var(--font-geist);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .text-headline-md {
+    font-family: var(--font-geist);
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  .text-headline-sm {
+    font-family: var(--font-geist);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  /* Body */
+  .text-body-lg {
+    font-family: var(--font-inter);
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .text-body-md {
+    font-family: var(--font-inter);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .text-body-sm {
+    font-family: var(--font-inter);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* Label (JetBrains Mono) */
+  .text-label-sm {
+    font-family: var(--font-jetbrains);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.05em;
+  }
+
+  .text-label-md {
+    font-family: var(--font-jetbrains);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* Nexus Color CSS Variables for direct use */
+.text-primary-nexus     { color: var(--nx-primary); }
+.text-secondary-nexus   { color: var(--nx-secondary); }
+.text-on-surface        { color: var(--nx-on-surface); }
+.text-on-surface-var    { color: var(--nx-on-surface-variant); }
+.bg-surface-container   { background-color: var(--nx-surface-container); }
+.bg-surface-high        { background-color: var(--nx-surface-container-high); }
+.border-outline-var     { border-color: var(--nx-outline-variant); }

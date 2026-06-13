@@ -1,0 +1,26 @@
+{
+  "name": "Neralla Nexus",
+  "short_name": "Nexus",
+  "description": "The Digital Home of Neralla Family",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#090f0e",
+  "theme_color": "#14b8a6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en-IN"
+}
