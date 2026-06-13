@@ -126,6 +126,8 @@ export interface Policy {
   expiry_date?: string;
   coverage?: string;
   document_url?: string;
+  notes?: string;
+  has_policy_number?: boolean;
   created_at: string;
 }
 
