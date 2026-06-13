@@ -104,9 +104,13 @@ function LoginForm() {
       >
         <video
           ref={videoRef}
-          src="/welcome.mp4"
+          src="/saran-welcome.mp4"
           playsInline
           onEnded={() => setStage('login')}
+          onError={(e) => {
+            console.error("Video playback failed, falling back to login screen:", e);
+            setStage('login');
+          }}
           className="w-full h-full object-contain md:max-w-4xl"
         />
 
