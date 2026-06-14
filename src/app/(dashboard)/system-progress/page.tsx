@@ -133,7 +133,7 @@ export default async function SystemProgressPage() {
           />
         </div>
         <p className="text-label-sm mt-2" style={{ color: '#859490' }}>
-          {completed} of {total} features complete across 7 phases
+          {completed} of {total} features complete across 8 phases
         </p>
       </div>
 
@@ -151,6 +151,7 @@ export default async function SystemProgressPage() {
           5: 'Assets & Memories',
           6: 'Time & Emergency',
           7: 'Intelligence & Legacy',
+          8: 'Utilities Extension (Phase 8)',
         };
 
         return (
