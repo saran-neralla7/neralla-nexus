@@ -5,8 +5,9 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { formatRelativeTime } from '@/lib/utils';
 
 export default function NotificationsPage() {
-  const { user } = useUser();
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications(user?.id);
+  const { user, loading: userLoading } = useUser();
+  const { notifications = [], unreadCount = 0, loading: notificationsLoading, markAsRead, markAllAsRead } = useNotifications(user?.id);
+  const loading = userLoading || (user && notificationsLoading);
 
   return (
     <div className="px-4 md:px-8 py-6 max-w-2xl space-y-6">
