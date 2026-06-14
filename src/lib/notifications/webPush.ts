@@ -38,7 +38,17 @@ export async function sendPushNotification(
       return { success: true, sent: 0 };
     }
 
-    const payload = JSON.stringify({ title, body, url, ...extra });
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://neralla-nexus.vercel.app';
+    const cleanExtra = { ...extra };
+
+    if (cleanExtra.icon && cleanExtra.icon.startsWith('/')) {
+      cleanExtra.icon = `${appUrl.replace(/\/$/, '')}${cleanExtra.icon}`;
+    }
+    if (cleanExtra.badge && cleanExtra.badge.startsWith('/')) {
+      cleanExtra.badge = `${appUrl.replace(/\/$/, '')}${cleanExtra.badge}`;
+    }
+
+    const payload = JSON.stringify({ title, body, url, ...cleanExtra });
     let sentCount = 0;
 
     const promises = subs.map(async (subRecord) => {
