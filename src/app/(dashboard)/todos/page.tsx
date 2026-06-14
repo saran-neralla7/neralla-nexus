@@ -195,10 +195,20 @@ export default function TodosPage() {
           {task.assigned_user && (
             <div
               title={`Assigned to ${task.assigned_user.full_name}`}
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-white/10"
-              style={{ background: getAvatarStyle(task.assigned_user.full_name) }}
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-white/10 relative overflow-hidden"
+              style={{ 
+                background: task.assigned_user.avatar_url ? 'transparent' : getAvatarStyle(task.assigned_user.full_name) 
+              }}
             >
-              {getInitials(task.assigned_user.full_name)}
+              {task.assigned_user.avatar_url ? (
+                <img
+                  src={task.assigned_user.avatar_url}
+                  alt={task.assigned_user.full_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                getInitials(task.assigned_user.full_name)
+              )}
             </div>
           )}
         </div>

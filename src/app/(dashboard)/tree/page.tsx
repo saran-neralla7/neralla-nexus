@@ -622,10 +622,20 @@ export default function TreePage() {
                     >
                       {/* Avatar */}
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0"
-                        style={{ background: getAvatarStyle(node.member.full_name) }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0 relative overflow-hidden"
+                        style={{ 
+                          background: node.member.avatar_url ? 'transparent' : getAvatarStyle(node.member.full_name) 
+                        }}
                       >
-                        {getInitials(node.member.full_name)}
+                        {node.member.avatar_url ? (
+                          <img
+                            src={node.member.avatar_url}
+                            alt={node.member.full_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          getInitials(node.member.full_name)
+                        )}
                       </div>
 
                       {/* Info */}
@@ -732,10 +742,20 @@ export default function TreePage() {
             {/* Quick Profile Summary */}
             <div className="text-center">
               <div
-                className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-white text-xl font-bold mb-3"
-                style={{ background: getAvatarStyle(selectedNode.member.full_name) }}
+                className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-white text-xl font-bold mb-3 relative overflow-hidden"
+                style={{ 
+                  background: selectedNode.member.avatar_url ? 'transparent' : getAvatarStyle(selectedNode.member.full_name) 
+                }}
               >
-                {getInitials(selectedNode.member.full_name)}
+                {selectedNode.member.avatar_url ? (
+                  <img
+                    src={selectedNode.member.avatar_url}
+                    alt={selectedNode.member.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  getInitials(selectedNode.member.full_name)
+                )}
               </div>
               <h3 className="text-body-lg font-bold text-white">{selectedNode.member.full_name}</h3>
               <p className="text-label-sm text-[#4fdbc8] capitalize">{selectedNode.member.relationship || 'Family Member'}</p>
@@ -860,10 +880,20 @@ export default function TreePage() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[11px] font-bold shrink-0"
-                      style={{ background: getAvatarStyle(member.full_name) }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[11px] font-bold shrink-0 relative overflow-hidden"
+                      style={{ 
+                        background: member.avatar_url ? 'transparent' : getAvatarStyle(member.full_name) 
+                      }}
                     >
-                      {getInitials(member.full_name)}
+                      {member.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={member.full_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        getInitials(member.full_name)
+                      )}
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-body-sm font-semibold text-white truncate">{member.full_name}</h4>

@@ -474,10 +474,20 @@ export default function DocumentsPage() {
                     {docOwner ? (
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
-                          style={{ background: getAvatarStyle(docOwner.full_name) }}
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold relative overflow-hidden"
+                          style={{ 
+                            background: docOwner.avatar_url ? 'transparent' : getAvatarStyle(docOwner.full_name) 
+                          }}
                         >
-                          {getInitials(docOwner.full_name)}
+                          {docOwner.avatar_url ? (
+                            <img
+                              src={docOwner.avatar_url}
+                              alt={docOwner.full_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            getInitials(docOwner.full_name)
+                          )}
                         </div>
                         <span className="text-label-sm truncate max-w-[100px]" style={{ color: '#bbcac6' }}>
                           {docOwner.full_name.split(' ')[0]}

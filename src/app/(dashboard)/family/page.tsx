@@ -62,6 +62,57 @@ export default function FamilyPage() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const handleAvatarUpload = async (memberId: string, file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setAvatarUploading(true);
+      const supabase = createClient();
+      
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user?.family_id}/${memberId}-${Date.now()}.${fileExt}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const avatarUrl = urlData.publicUrl;
+
+      const { error: dbError } = await supabase
+        .from('family_members')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', memberId);
+
+      if (dbError) throw dbError;
+
+      toast.success('Profile picture updated successfully!');
+      
+      setMembers((prev) =>
+        prev.map((m) => (m.id === memberId ? { ...m, avatar_url: avatarUrl } : m))
+      );
+      if (selectedMember && selectedMember.id === memberId) {
+        setSelectedMember((prev) => prev ? { ...prev, avatar_url: avatarUrl } : null);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload profile picture');
+      console.error(err);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const fetchMembers = async () => {
     if (!user?.family_id) return;
@@ -318,10 +369,38 @@ export default function FamilyPage() {
             {/* Profile Avatar and Name */}
             <div className="relative px-6 md:px-8 pb-6 flex flex-col md:flex-row md:items-end gap-5 -mt-12 md:-mt-16 z-10">
               <div
-                className="w-24 h-24 md:w-32 md:h-32 rounded-3xl flex items-center justify-center text-white text-3xl md:text-4xl font-extrabold shadow-xl border-4 border-[#0e1513] relative overflow-hidden"
-                style={{ background: getAvatarStyle(selectedMember.full_name) }}
+                className="w-24 h-24 md:w-32 md:h-32 rounded-3xl flex items-center justify-center text-white text-3xl md:text-4xl font-extrabold shadow-xl border-4 border-[#0e1513] relative overflow-hidden group/avatar"
+                style={{ 
+                  background: selectedMember.avatar_url ? 'transparent' : getAvatarStyle(selectedMember.full_name) 
+                }}
               >
-                {getInitials(selectedMember.full_name)}
+                {selectedMember.avatar_url ? (
+                  <img
+                    src={selectedMember.avatar_url}
+                    alt={selectedMember.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  getInitials(selectedMember.full_name)
+                )}
+
+                {/* Owner-only Upload Overlay */}
+                {user?.role === 'owner' && (
+                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-[10px] md:text-xs font-semibold text-[#4fdbc8] gap-1 select-none">
+                    <span className="material-symbols-outlined text-[20px] md:text-[24px]">photo_camera</span>
+                    <span>{avatarUploading ? 'Uploading...' : 'Change'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={avatarUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAvatarUpload(selectedMember.id, file);
+                      }}
+                    />
+                  </label>
+                )}
               </div>
               <div className="flex-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-3">
@@ -792,10 +871,20 @@ export default function FamilyPage() {
                     {/* Header: Avatar, Name, Relationship */}
                     <div className="flex items-center gap-4">
                       <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
-                        style={{ background: getAvatarStyle(member.full_name) }}
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0 relative overflow-hidden"
+                        style={{ 
+                          background: member.avatar_url ? 'transparent' : getAvatarStyle(member.full_name) 
+                        }}
                       >
-                        {getInitials(member.full_name)}
+                        {member.avatar_url ? (
+                          <img
+                            src={member.avatar_url}
+                            alt={member.full_name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          getInitials(member.full_name)
+                        )}
                       </div>
                       <div className="min-w-0">
                         <h3
