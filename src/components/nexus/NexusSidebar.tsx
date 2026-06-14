@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { label: 'Memories', href: '/memories', icon: 'photo_library' },
   { label: 'Knowledge', href: '/knowledge', icon: 'menu_book' },
   { label: 'Calendar', href: '/calendar', icon: 'calendar_today' },
+  { label: 'Occasions', href: '/occasions', icon: 'cake' },
   { label: 'Contacts', href: '/contacts', icon: 'contacts' },
   { label: 'Emergency', href: '/emergency', icon: 'sos' },
   { label: 'Habits', href: '/habits', icon: 'insights' },

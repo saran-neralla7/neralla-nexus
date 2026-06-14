@@ -64,6 +64,43 @@ function LoginForm() {
     }
   };
 
+  const handleBiometricLogin = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/passkey/login');
+      if (!res.ok) {
+        throw new Error('Failed to fetch biometric login options');
+      }
+      const options = await res.json();
+
+      const { startAuthentication } = await import('@simplewebauthn/browser');
+      const authResponse = await startAuthentication({ optionsJSON: options });
+
+      const verifyRes = await fetch('/api/auth/passkey/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authResponse),
+      });
+
+      if (!verifyRes.ok) {
+        const errData = await verifyRes.json();
+        throw new Error(errData.error || 'Biometric authentication failed');
+      }
+
+      toast.success('Welcome back!');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('nexus_just_logged_in', 'true');
+      }
+      router.push(redirectTo);
+      router.refresh();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Biometric login cancelled or failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="h-screen w-screen relative overflow-hidden" style={{ backgroundColor: '#090f0e' }}>
       {/* 1. Splash Screen */}
@@ -384,13 +421,14 @@ function LoginForm() {
               {/* Biometric */}
               <button
                 type="button"
-                className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-medium transition-all active:scale-[0.98]"
+                className="w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-medium transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                disabled={loading}
                 style={{
                   background: 'rgba(79,219,200,0.08)',
                   border: '1px solid rgba(79,219,200,0.2)',
                   color: '#4fdbc8',
                 }}
-                onClick={() => toast.info('Biometric login coming soon')}
+                onClick={handleBiometricLogin}
               >
                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>fingerprint</span>
                 <span>Biometric Login</span>

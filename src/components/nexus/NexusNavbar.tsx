@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import type { User } from '@/types';
 import { usePWA } from '@/hooks/usePWA';
 import NexusModal from '@/components/nexus/NexusModal';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface NexusNavbarProps {
   user: User | null;
@@ -26,6 +27,13 @@ export default function NexusNavbar({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
   const { isInstallable, isIOS, installApp } = usePWA();
+  const {
+    isSupported: isPushSupported,
+    isSubscribed: isPushSubscribed,
+    loading: pushLoading,
+    subscribe: subscribePush,
+    unsubscribe: unsubscribePush,
+  } = usePushNotifications();
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -123,6 +131,22 @@ export default function NexusNavbar({
         >
           <span className="material-symbols-outlined">search</span>
         </button>
+
+        {/* Enable Push Notifications Toggle */}
+        {isPushSupported && (
+          <button
+            onClick={isPushSubscribed ? unsubscribePush : subscribePush}
+            disabled={pushLoading}
+            className="p-2 rounded-xl transition-all hover:bg-white/5 disabled:opacity-50 flex items-center justify-center cursor-pointer"
+            style={{ color: isPushSubscribed ? '#4fdbc8' : '#859490' }}
+            title={isPushSubscribed ? 'Disable notifications on this device' : 'Enable notifications on this device'}
+            aria-label="Toggle notifications"
+          >
+            <span className="material-symbols-outlined">
+              {isPushSubscribed ? 'notifications_active' : 'notifications_off'}
+            </span>
+          </button>
+        )}
 
         {/* Notifications */}
         <Link

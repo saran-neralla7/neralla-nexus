@@ -29,6 +29,9 @@ export default function SettingsPage() {
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
 
+  // Passkey State
+  const [passkeys, setPasskeys] = useState<any[]>([]);
+
   // Backup State
   const [backupFreq, setBackupFreq] = useState('weekly');
   const [exporting, setExporting] = useState(false);
@@ -54,6 +57,13 @@ export default function SettingsPage() {
         .eq('id', user.id)
         .single();
       setHasPin(!!userRecord?.pin_hash);
+
+      // Fetch passkeys
+      const { data: passkeysData } = await supabase
+        .from('passkey_credentials')
+        .select('id, created_at')
+        .eq('user_id', user.id);
+      setPasskeys(passkeysData || []);
 
       if (userRecord?.family_id) {
         // Fetch family members
@@ -139,6 +149,52 @@ export default function SettingsPage() {
         toast.error(err.message || 'Failed to update PIN code');
       }
     });
+  };
+
+  const handleRegisterPasskey = async () => {
+    try {
+      const res = await fetch('/api/auth/passkey/register');
+      if (!res.ok) {
+        throw new Error('Failed to fetch registration options');
+      }
+      const options = await res.json();
+
+      const { startRegistration } = await import('@simplewebauthn/browser');
+      const regResponse = await startRegistration({ optionsJSON: options });
+
+      const verifyRes = await fetch('/api/auth/passkey/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(regResponse),
+      });
+
+      if (!verifyRes.ok) {
+        const errData = await verifyRes.json();
+        throw new Error(errData.error || 'Verification failed');
+      }
+
+      toast.success('Passkey/Biometric login registered successfully!');
+      loadData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Passkey registration cancelled or failed');
+    }
+  };
+
+  const handleDeletePasskey = async (id: string) => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('passkey_credentials')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Passkey removed successfully');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete passkey');
+    }
   };
 
   // Backup frequency save
@@ -323,70 +379,126 @@ export default function SettingsPage() {
 
           {/* SECURITY PIN TAB */}
           {activeTab === 'security' && (
-            <div className="glass-card rounded-2xl p-6 space-y-6 max-w-2xl">
-              <div>
-                <h3
-                  className="text-[#dde4e1] font-semibold text-lg"
-                  style={{ fontFamily: 'Geist, sans-serif' }}
-                >
-                  Vault PIN Code Security
-                </h3>
-                <p className="text-xs text-[#859490] mt-0.5">
-                  Manage the 4-6 digit passcode used to reveal sensitive documents, insurance numbers, and passwords.
-                </p>
+            <div className="space-y-6 max-w-2xl">
+              {/* PIN Code Security Card */}
+              <div className="glass-card rounded-2xl p-6 space-y-6">
+                <div>
+                  <h3
+                    className="text-[#dde4e1] font-semibold text-lg"
+                    style={{ fontFamily: 'Geist, sans-serif' }}
+                  >
+                    Vault PIN Code Security
+                  </h3>
+                  <p className="text-xs text-[#859490] mt-0.5">
+                    Manage the 4-6 digit passcode used to reveal sensitive documents, insurance numbers, and passwords.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSavePin} className="space-y-4">
+                  {hasPin && (
+                    <div className="space-y-1.5">
+                      <label className="text-label-sm text-[#bbcac6]">Current Security PIN</label>
+                      <input
+                        type="password"
+                        required
+                        maxLength={6}
+                        placeholder="••••••"
+                        value={currentPin}
+                        onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-transparent text-[#dde4e1] placeholder:text-[#859490]/50 focus:border-[#4fdbc8] focus:outline-none tracking-widest text-center text-lg"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-label-sm text-[#bbcac6]">New Security PIN</label>
+                      <input
+                        type="password"
+                        required
+                        maxLength={6}
+                        placeholder="••••••"
+                        value={newPin}
+                        onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-transparent text-[#dde4e1] placeholder:text-[#859490]/50 focus:border-[#4fdbc8] focus:outline-none tracking-widest text-center text-lg"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-label-sm text-[#bbcac6]">Confirm New PIN</label>
+                      <input
+                        type="password"
+                        required
+                        maxLength={6}
+                        placeholder="••••••"
+                        value={confirmPin}
+                        onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-transparent text-[#dde4e1] placeholder:text-[#859490]/50 focus:border-[#4fdbc8] focus:outline-none tracking-widest text-center text-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="py-3 px-6 bg-gradient-to-br from-[#14b8a6] to-[#0566d9] text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all active:scale-95 shadow-md cursor-pointer"
+                  >
+                    {isPending ? 'Updating...' : hasPin ? 'Change PIN Code' : 'Configure PIN'}
+                  </button>
+                </form>
               </div>
 
-              <form onSubmit={handleSavePin} className="space-y-4">
-                {hasPin && (
-                  <div className="space-y-1.5">
-                    <label className="text-label-sm text-[#bbcac6]">Current Security PIN</label>
-                    <input
-                      type="password"
-                      required
-                      maxLength={6}
-                      placeholder="••••••"
-                      value={currentPin}
-                      onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-transparent text-[#dde4e1] placeholder:text-[#859490]/50 focus:border-[#4fdbc8] focus:outline-none tracking-widest text-center text-lg"
-                    />
+              {/* Biometric Passkeys Card */}
+              <div className="glass-card rounded-2xl p-6 space-y-6">
+                <div>
+                  <h3
+                    className="text-[#dde4e1] font-semibold text-lg"
+                    style={{ fontFamily: 'Geist, sans-serif' }}
+                  >
+                    Biometric Passkeys
+                  </h3>
+                  <p className="text-xs text-[#859490] mt-0.5">
+                    Register TouchID, FaceID or device PIN to bypass passwords on subsequent logins.
+                  </p>
+                </div>
+
+                {passkeys.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-label-sm text-[#bbcac6]">Registered Devices</h4>
+                    <div className="space-y-2">
+                      {passkeys.map((pk) => (
+                        <div
+                          key={pk.id}
+                          className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-[#4fdbc8]">fingerprint</span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-body-sm text-[#dde4e1] truncate">Passkey (ID: {pk.id.slice(0, 10)}...)</p>
+                              <p className="text-[10px] text-[#859490]">Registered on {new Date(pk.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDeletePasskey(pk.id)}
+                            className="p-2 text-[#ffb4ab] hover:bg-white/5 rounded-xl transition-all cursor-pointer flex items-center justify-center"
+                            title="Remove Passkey"
+                          >
+                            <span className="material-symbols-outlined text-lg">delete</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-label-sm text-[#bbcac6]">New Security PIN</label>
-                    <input
-                      type="password"
-                      required
-                      maxLength={6}
-                      placeholder="••••••"
-                      value={newPin}
-                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-transparent text-[#dde4e1] placeholder:text-[#859490]/50 focus:border-[#4fdbc8] focus:outline-none tracking-widest text-center text-lg"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-label-sm text-[#bbcac6]">Confirm New PIN</label>
-                    <input
-                      type="password"
-                      required
-                      maxLength={6}
-                      placeholder="••••••"
-                      value={confirmPin}
-                      onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-transparent text-[#dde4e1] placeholder:text-[#859490]/50 focus:border-[#4fdbc8] focus:outline-none tracking-widest text-center text-lg"
-                    />
-                  </div>
-                </div>
-
                 <button
-                  type="submit"
-                  disabled={isPending}
-                  className="py-3 px-6 bg-gradient-to-br from-[#14b8a6] to-[#0566d9] text-white font-bold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all active:scale-95 shadow-md"
+                  type="button"
+                  onClick={handleRegisterPasskey}
+                  className="py-3 px-6 bg-gradient-to-br from-[#14b8a6] to-[#0566d9] text-white font-bold rounded-xl hover:brightness-110 transition-all active:scale-95 shadow-md flex items-center gap-2 cursor-pointer"
                 >
-                  {isPending ? 'Updating...' : hasPin ? 'Change PIN Code' : 'Configure PIN'}
+                  <span className="material-symbols-outlined">fingerprint</span>
+                  <span>Register Passkey / Biometrics</span>
                 </button>
-              </form>
+              </div>
             </div>
           )}
 

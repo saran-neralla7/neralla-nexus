@@ -52,6 +52,12 @@ export async function fetchCalendarEvents() {
     .select('id, full_name, date_of_birth')
     .eq('family_id', familyId);
 
+  // 5. Fetch manual occasions
+  const { data: occasions, error: occasionsErr } = await supabase
+    .from('occasions')
+    .select('id, name, type, date, relationship')
+    .eq('family_id', familyId);
+
   const events: any[] = [];
 
   // Add custom events
@@ -150,6 +156,35 @@ export async function fetchCalendarEvents() {
             members: [m.id],
             sourceModule: 'family',
             sourceId: m.id,
+          });
+        }
+      }
+    });
+  }
+
+  // Add manual occasions (recurring annually)
+  if (occasions) {
+    const currentYear = new Date().getFullYear();
+    occasions.forEach((occ: any) => {
+      if (occ.date) {
+        const occDate = new Date(occ.date);
+        const emoji = occ.type === 'birthday' ? '🎂' : occ.type === 'anniversary' ? '💍' : '📅';
+        const label = occ.type === 'birthday' ? 'Birthday' : occ.type === 'anniversary' ? 'Anniversary' : 'Key Date';
+        
+        for (let y = currentYear - 1; y <= currentYear + 1; y++) {
+          const recurrenceDate = new Date(occDate);
+          recurrenceDate.setFullYear(y);
+          events.push({
+            id: `occasion-${occ.id}-${y}`,
+            title: `${emoji} ${label}: ${occ.name}`,
+            description: `${occ.name}'s ${occ.type} (${occ.relationship})`,
+            start_at: recurrenceDate.toISOString(),
+            end_at: recurrenceDate.toISOString(),
+            type: occ.type,
+            all_day: true,
+            members: [],
+            sourceModule: 'occasions',
+            sourceId: occ.id,
           });
         }
       }
