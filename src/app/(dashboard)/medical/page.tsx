@@ -52,6 +52,7 @@ export default function MedicalPage() {
   const [reminders, setReminders] = useState<any[]>([]);
   const [medLogs, setMedLogs] = useState<any[]>([]);
   const [selectedMedDate, setSelectedMedDate] = useState<string>(new Date().toLocaleDateString('en-CA'));
+  const [selectedMedMemberFilter, setSelectedMedMemberFilter] = useState('all');
   const [showRemModal, setShowRemModal] = useState(false);
   const [editingRemId, setEditingRemId] = useState<string | null>(null);
 
@@ -353,6 +354,7 @@ export default function MedicalPage() {
 
   const activeRemindersForDate = reminders.filter((rem) => {
     if (!rem.is_active) return false;
+    if (selectedMedMemberFilter !== 'all' && rem.member_id !== selectedMedMemberFilter) return false;
     if (rem.frequency === 'weekly' && rem.days_of_week) {
       return rem.days_of_week.includes(targetDayOfWeek);
     }
@@ -595,12 +597,26 @@ export default function MedicalPage() {
                   <h2 className="text-[#dde4e1] font-semibold text-lg" style={{ fontFamily: 'Geist, sans-serif' }}>Daily Medication Checklist</h2>
                   <p className="text-xs text-[#859490]">Track medicines due for the selected date.</p>
                 </div>
-                <input
-                  type="date"
-                  value={selectedMedDate}
-                  onChange={(e) => setSelectedMedDate(e.target.value)}
-                  className="px-4 py-2 rounded-xl border border-white/10 bg-[#090f0e] text-body-sm text-white focus:outline-none focus:border-[#ffb59e] cursor-pointer"
-                />
+                <div className="flex items-center gap-3">
+                  <select
+                    value={selectedMedMemberFilter}
+                    onChange={(e) => setSelectedMedMemberFilter(e.target.value)}
+                    className="px-4 py-2 rounded-xl border border-white/10 bg-[#090f0e] text-body-sm text-white focus:outline-none focus:border-[#ffb59e] cursor-pointer"
+                  >
+                    <option value="all">All Members</option>
+                    {members.map((mem) => (
+                      <option key={mem.id} value={mem.id}>
+                        {mem.full_name.split(' ')[0]}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={selectedMedDate}
+                    onChange={(e) => setSelectedMedDate(e.target.value)}
+                    className="px-4 py-2 rounded-xl border border-white/10 bg-[#090f0e] text-body-sm text-white focus:outline-none focus:border-[#ffb59e] cursor-pointer"
+                  />
+                </div>
               </div>
 
               {activeRemindersForDate.length === 0 ? (
@@ -728,63 +744,65 @@ export default function MedicalPage() {
                 </button>
               </div>
 
-              {reminders.length === 0 ? (
+              {reminders.filter((rem) => selectedMedMemberFilter === 'all' || rem.member_id === selectedMedMemberFilter).length === 0 ? (
                 <div className="py-8 text-center text-[#859490]">
                   <p className="text-xs">No medication reminders scheduled yet.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {reminders.map((rem) => {
-                    const member = members.find((m) => m.id === rem.member_id);
-                    return (
-                      <div
-                        key={rem.id}
-                        className="p-4 bg-white/3 border border-white/5 rounded-xl space-y-3 hover:border-white/10 transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h4 className="text-body-sm font-semibold text-[#dde4e1]">{rem.name}</h4>
-                            <p className="text-[11px] text-[#859490] mt-0.5 leading-relaxed">
-                              {rem.dosage ? `${rem.dosage} • ` : ''}
-                              {rem.scheduled_time.slice(0, 5)} • {rem.frequency}
-                              {rem.frequency === 'weekly' && rem.days_of_week && ` (${rem.days_of_week.map((d: number) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')})`}
-                            </p>
-                            {member && (
-                              <p className="text-[10px] text-[#bbcac6] mt-1">Assigned to: {member.full_name}</p>
-                            )}
-                          </div>
+                  {reminders
+                    .filter((rem) => selectedMedMemberFilter === 'all' || rem.member_id === selectedMedMemberFilter)
+                    .map((rem) => {
+                      const member = members.find((m) => m.id === rem.member_id);
+                      return (
+                        <div
+                          key={rem.id}
+                          className="p-4 bg-white/3 border border-white/5 rounded-xl space-y-3 hover:border-white/10 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h4 className="text-body-sm font-semibold text-[#dde4e1]">{rem.name}</h4>
+                              <p className="text-[11px] text-[#859490] mt-0.5 leading-relaxed">
+                                {rem.dosage ? `${rem.dosage} • ` : ''}
+                                {rem.scheduled_time.slice(0, 5)} • {rem.frequency}
+                                {rem.frequency === 'weekly' && rem.days_of_week && ` (${rem.days_of_week.map((d: number) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')})`}
+                              </p>
+                              {member && (
+                                <p className="text-[10px] text-[#bbcac6] mt-1">Assigned to: {member.full_name}</p>
+                              )}
+                            </div>
 
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleToggleRemActive(rem.id, !rem.is_active)}
-                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                                rem.is_active ? 'text-[#4fdbc8] hover:bg-white/5' : 'text-[#859490] hover:bg-white/5'
-                              }`}
-                              title={rem.is_active ? 'Deactivate reminder' : 'Activate reminder'}
-                            >
-                              <span className="material-symbols-outlined text-[18px]">
-                                {rem.is_active ? 'toggle_on' : 'toggle_off'}
-                              </span>
-                            </button>
-                            <button
-                              onClick={() => handleOpenRemEdit(rem)}
-                              className="p-1.5 text-[#bbcac6] hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                              title="Edit Reminder"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">edit</span>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRem(rem.id)}
-                              className="p-1.5 text-[#ffb4ab] hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
-                              title="Delete Reminder"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleToggleRemActive(rem.id, !rem.is_active)}
+                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                  rem.is_active ? 'text-[#4fdbc8] hover:bg-white/5' : 'text-[#859490] hover:bg-white/5'
+                                }`}
+                                title={rem.is_active ? 'Deactivate reminder' : 'Activate reminder'}
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  {rem.is_active ? 'toggle_on' : 'toggle_off'}
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => handleOpenRemEdit(rem)}
+                                className="p-1.5 text-[#bbcac6] hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                                title="Edit Reminder"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteRem(rem.id)}
+                                className="p-1.5 text-[#ffb4ab] hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                                title="Delete Reminder"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               )}
             </div>

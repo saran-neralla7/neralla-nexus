@@ -23,8 +23,8 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'Nexus Alert';
     const options = {
       body: data.body || '',
-      icon: '/logo.png',
-      badge: '/logo.png',
+      icon: data.icon || '/logo.png',
+      badge: data.badge || data.icon || '/logo.png',
       data: {
         url: data.url || '/dashboard',
         reminderId: data.reminderId || null,
