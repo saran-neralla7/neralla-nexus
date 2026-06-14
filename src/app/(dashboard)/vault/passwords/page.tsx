@@ -32,6 +32,10 @@ interface PasswordDisplayEntry {
   updated_at: string;
   has_username: boolean;
   has_notes: boolean;
+  cost?: number;
+  billing_cycle?: string;
+  next_billing_date?: string;
+  is_subscription?: boolean;
 }
 
 const CATEGORIES = [
@@ -78,6 +82,10 @@ export default function PasswordsPage() {
   const [formPassword, setFormPassword] = useState('');
   const [formUrl, setFormUrl] = useState('');
   const [formNotes, setFormNotes] = useState('');
+  const [formIsSubscription, setFormIsSubscription] = useState(false);
+  const [formCost, setFormCost] = useState('');
+  const [formBillingCycle, setFormBillingCycle] = useState('monthly');
+  const [formNextBillingDate, setFormNextBillingDate] = useState('');
   const [formMemberId, setFormMemberId] = useState('');
 
   // Reveal Details Modal State
@@ -240,6 +248,10 @@ export default function PasswordsPage() {
           url: formUrl || undefined,
           notes: formNotes || undefined,
           member_id: formMemberId || undefined,
+          cost: formIsSubscription && formCost ? parseFloat(formCost) : undefined,
+          billing_cycle: formIsSubscription ? formBillingCycle : undefined,
+          next_billing_date: formIsSubscription && formNextBillingDate ? formNextBillingDate : undefined,
+          is_subscription: formIsSubscription,
         };
 
         if (editingEntryId) {
@@ -271,6 +283,10 @@ export default function PasswordsPage() {
     setFormUrl('');
     setFormNotes('');
     setFormMemberId('');
+    setFormCost('');
+    setFormBillingCycle('monthly');
+    setFormNextBillingDate('');
+    setFormIsSubscription(false);
   };
 
   // Open Edit Form (with decryption)
@@ -288,6 +304,10 @@ export default function PasswordsPage() {
         setFormUrl(entry.url || '');
         setFormNotes(decrypted.notes || '');
         setFormMemberId(entry.member_id || '');
+        setFormCost(entry.cost ? entry.cost.toString() : '');
+        setFormBillingCycle(entry.billing_cycle || 'monthly');
+        setFormNextBillingDate(entry.next_billing_date || '');
+        setFormIsSubscription(entry.is_subscription || false);
         
         setShowFormModal(true);
       } catch (err: any) {
@@ -353,6 +373,19 @@ export default function PasswordsPage() {
       (entry.url && entry.url.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
+
+  // Subscription summaries
+  const subscriptions = passwords.filter((p) => p.is_subscription);
+  const monthlyBurn = subscriptions.reduce((sum, sub) => {
+    const cost = parseFloat(sub.cost as any || '0');
+    if (sub.billing_cycle === 'yearly') return sum + cost / 12;
+    if (sub.billing_cycle === 'quarterly') return sum + cost / 3;
+    return sum + cost;
+  }, 0);
+  const upcomingSubscriptions = [...subscriptions]
+    .filter((s) => s.next_billing_date)
+    .sort((a, b) => new Date(a.next_billing_date!).getTime() - new Date(b.next_billing_date!).getTime())
+    .slice(0, 5);
 
   if (loading && passwords.length === 0) {
     return (
@@ -540,7 +573,7 @@ export default function PasswordsPage() {
         </div>
 
         {/* Passwords grid */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           
           {/* Search bar */}
           <div className="relative">
@@ -570,11 +603,16 @@ export default function PasswordsPage() {
               {filteredPasswords.map((entry) => {
                 const member = members.find((m) => m.id === entry.member_id);
                 const categoryInfo = CATEGORIES.find((c) => c.id === entry.category);
+                const isExpiringSoon = entry.is_subscription && entry.next_billing_date && (new Date(entry.next_billing_date).getTime() - Date.now() < 7 * 86400000);
                 
                 return (
                   <div
                     key={entry.id}
-                    className="glass-card rounded-2xl p-4 border border-white/5 flex flex-col justify-between hover:border-white/12 transition-all relative overflow-hidden group"
+                    className={`glass-card rounded-2xl p-4 flex flex-col justify-between hover:border-white/12 transition-all relative overflow-hidden group ${
+                      entry.is_subscription
+                        ? 'border-[#4fdbc8]/30 shadow-lg shadow-[#4fdbc8]/5 hover:border-[#4fdbc8]/60 bg-[#4fdbc8]/[0.01]'
+                        : 'border-white/5'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
@@ -599,6 +637,13 @@ export default function PasswordsPage() {
                             </a>
                           ) : (
                             <span className="text-[10px] text-[#859490] font-mono">Secure Entry</span>
+                          )}
+                          {entry.is_subscription && entry.cost && (
+                            <div className="mt-2 flex items-center gap-1">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${isExpiringSoon ? 'bg-red-500/10 border-red-500/25 text-red-400' : 'bg-[#4fdbc8]/10 border-[#4fdbc8]/20 text-[#4fdbc8]'}`}>
+                                ₹{parseFloat(entry.cost as any).toFixed(2)} / {entry.billing_cycle}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -656,6 +701,51 @@ export default function PasswordsPage() {
             </div>
           )}
 
+        </div>
+
+        {/* Subscription Sidebar Widget */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="glass-card p-5 rounded-2xl border border-white/5 bg-[#4fdbc8]/[0.01] space-y-4">
+            <h3 className="text-label-md font-bold text-[#4fdbc8] uppercase tracking-wider">Subscription Costs</h3>
+            
+            <div className="py-2">
+              <span className="text-body-sm text-[#859490] block">Monthly Burn Rate</span>
+              <span className="text-headline-md text-white font-bold block mt-0.5">₹{monthlyBurn.toFixed(2)}</span>
+            </div>
+
+            <p className="text-body-sm text-[#bbcac6] text-xs leading-relaxed">
+              Calculated monthly burn rate based on active family subscriptions in the vault.
+            </p>
+          </div>
+
+          <div className="glass-card p-5 rounded-2xl border border-white/5 bg-white/[0.02] space-y-4">
+            <h3 className="text-label-md font-bold text-[#4fdbc8] uppercase tracking-wider">Upcoming Renewals</h3>
+            
+            {upcomingSubscriptions.length === 0 ? (
+              <p className="text-body-sm text-[#859490] text-center py-4">No upcoming payments.</p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingSubscriptions.map((sub) => {
+                  const daysLeft = Math.ceil((new Date(sub.next_billing_date!).getTime() - Date.now()) / 86400000);
+                  const isSoon = daysLeft <= 7;
+                  return (
+                    <div key={sub.id} className="p-3 rounded-xl bg-white/[0.01] border border-white/5 space-y-1 text-body-sm">
+                      <div className="flex justify-between font-semibold text-white">
+                        <span className="truncate max-w-[120px]">{sub.title}</span>
+                        <span>₹{parseFloat(sub.cost as any || '0').toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className={isSoon ? 'text-red-400 font-bold' : 'text-[#859490]'}>
+                          {daysLeft < 0 ? 'Overdue' : daysLeft === 0 ? 'Due today' : `Due in ${daysLeft} days`}
+                        </span>
+                        <span className="text-[#859490] capitalize">{sub.billing_cycle}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -758,6 +848,58 @@ export default function PasswordsPage() {
               onChange={(e) => setFormNotes(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-white/8 bg-[#0e1513] text-body-sm text-white focus:outline-none focus:border-[#4fdbc8] resize-none"
             />
+          </div>
+
+          {/* Subscription Section */}
+          <div className="space-y-3 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+            <label className="flex items-center gap-3 cursor-pointer py-1 select-none">
+              <input
+                type="checkbox"
+                checked={formIsSubscription}
+                onChange={(e) => setFormIsSubscription(e.target.checked)}
+                className="w-4 h-4 rounded border-white/10 text-[#adc6ff] focus:ring-[#adc6ff]/20 bg-[#1a211f]"
+              />
+              <span className="text-body-sm font-semibold text-white">This credential is an active subscription</span>
+            </label>
+
+            {formIsSubscription && (
+              <div className="space-y-3 pt-3 border-t border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in">
+                <div className="space-y-1.5">
+                  <label className="text-label-sm text-[#bbcac6]">Cost (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formCost}
+                    onChange={(e) => setFormCost(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-white/8 bg-[#0e1513] text-body-sm text-white focus:outline-none focus:border-[#4fdbc8]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-label-sm text-[#bbcac6]">Cycle</label>
+                  <select
+                    value={formBillingCycle}
+                    onChange={(e) => setFormBillingCycle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-white/8 bg-[#0e1513] text-body-sm bg-[#0e1513] text-white focus:outline-none focus:border-[#4fdbc8]"
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-label-sm text-[#bbcac6]">Renewal Date</label>
+                  <input
+                    type="date"
+                    value={formNextBillingDate}
+                    onChange={(e) => setFormNextBillingDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-white/8 bg-[#0e1513] text-body-sm text-white focus:outline-none focus:border-[#4fdbc8]"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-white/5">

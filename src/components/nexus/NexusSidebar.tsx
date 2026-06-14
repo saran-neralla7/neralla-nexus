@@ -21,6 +21,11 @@ const NAV_ITEMS = [
   { label: 'Calendar', href: '/calendar', icon: 'calendar_today' },
   { label: 'Contacts', href: '/contacts', icon: 'contacts' },
   { label: 'Emergency', href: '/emergency', icon: 'sos' },
+  { label: 'Habits', href: '/habits', icon: 'insights' },
+  { label: 'Finance', href: '/finance', icon: 'payments' },
+  { label: 'Todos', href: '/todos', icon: 'splitscreen' },
+  { label: 'Shopping', href: '/shopping', icon: 'shopping_cart' },
+  { label: 'Vehicles', href: '/vehicles', icon: 'directions_car' },
 ];
 
 const BOTTOM_ITEMS = [

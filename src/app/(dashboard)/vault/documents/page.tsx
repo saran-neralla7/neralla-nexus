@@ -9,6 +9,7 @@ import { formatDate, formatFileSize, daysUntil, isExpiringSoon, isExpired, getAv
 import NexusModal from '@/components/nexus/NexusModal';
 import NexusConfirm from '@/components/nexus/NexusConfirm';
 import type { Document, FamilyMember } from '@/types';
+import { DocumentScanner } from '@/components/nexus/DocumentScanner';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Categories', icon: 'folder' },
@@ -43,6 +44,7 @@ export default function DocumentsPage() {
 
   // Modals state
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [docToDelete, setDocToDelete] = useState<Document | null>(null);
 
@@ -304,21 +306,35 @@ export default function DocumentsPage() {
             Secure storage for legal certificates, financial accounts, and identity cards
           </p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowUploadModal(true);
-          }}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold transition-all active:scale-[0.98]"
-          style={{
-            background: 'linear-gradient(135deg, #14b8a6, #0566d9)',
-            color: 'white',
-            boxShadow: '0 8px 32px rgba(20,184,166,0.25)',
-          }}
-        >
-          <span className="material-symbols-outlined text-[20px]">upload_file</span>
-          Upload Document
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setShowScannerModal(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold border border-[#4fdbc8]/20 hover:bg-[#4fdbc8]/5 transition-all active:scale-[0.98]"
+            style={{
+              color: '#4fdbc8',
+            }}
+          >
+            <span className="material-symbols-outlined text-[20px]">photo_camera</span>
+            Scan Document
+          </button>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowUploadModal(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-semibold transition-all active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg, #14b8a6, #0566d9)',
+              color: 'white',
+              boxShadow: '0 8px 32px rgba(20,184,166,0.25)',
+            }}
+          >
+            <span className="material-symbols-outlined text-[20px]">upload_file</span>
+            Upload Document
+          </button>
+        </div>
       </div>
 
       {/* Filter / Search Bar */}
@@ -672,6 +688,17 @@ export default function DocumentsPage() {
         variant="danger"
         loading={isPending}
       />
+
+      {/* Camera Document Scanner */}
+      {user && (
+        <DocumentScanner
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onSuccess={fetchDocuments}
+          userId={user.id}
+          familyId={user.family_id}
+        />
+      )}
     </div>
   );
 }

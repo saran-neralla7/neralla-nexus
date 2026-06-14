@@ -151,6 +151,10 @@ export async function fetchPasswords() {
     updated_at: entry.updated_at,
     has_username: !!entry.username_enc,
     has_notes: !!entry.notes_enc,
+    cost: entry.cost,
+    billing_cycle: entry.billing_cycle,
+    next_billing_date: entry.next_billing_date,
+    is_subscription: entry.is_subscription,
   }));
 }
 
@@ -206,6 +210,10 @@ export async function createPassword(data: {
   url?: string;
   notes?: string;
   member_id?: string;
+  cost?: number;
+  billing_cycle?: string;
+  next_billing_date?: string;
+  is_subscription?: boolean;
 }) {
   const supabase = await createClient();
   const authUser = await getAuthUser(supabase);
@@ -224,7 +232,7 @@ export async function createPassword(data: {
   const password_enc = data.password ? encrypt(data.password) : '';
   const notes_enc = data.notes ? encrypt(data.notes) : null;
 
-  const { error } = await supabase
+  const { data: newEntry, error } = await supabase
     .from('passwords')
     .insert({
       family_id: userData.family_id,
@@ -236,9 +244,39 @@ export async function createPassword(data: {
       url: data.url || null,
       notes_enc,
       created_by: authUser.id,
-    });
+      cost: data.cost || null,
+      billing_cycle: data.billing_cycle || 'monthly',
+      next_billing_date: data.next_billing_date || null,
+      is_subscription: data.is_subscription || false,
+    })
+    .select()
+    .single();
 
   if (error) throw error;
+
+  // Calendar sync for subscriptions
+  if (data.is_subscription && data.next_billing_date) {
+    const title = `Subscription: ${data.title} (${data.billing_cycle})`;
+    const desc = `Upcoming renewal billing date for subscription: ${data.title}. Cost: ${data.cost || 'Unspecified'}`;
+
+    await supabase
+      .from('calendar_events')
+      .insert({
+        family_id: userData.family_id,
+        title,
+        description: desc,
+        type: 'reminder',
+        start_at: new Date(data.next_billing_date).toISOString(),
+        end_at: new Date(data.next_billing_date).toISOString(),
+        all_day: true,
+        created_by: authUser.id,
+        metadata: {
+          source: 'password_subscription',
+          password_id: newEntry.id,
+        },
+      });
+  }
+
   return { success: true };
 }
 
@@ -255,6 +293,10 @@ export async function updatePassword(
     url?: string;
     notes?: string;
     member_id?: string;
+    cost?: number;
+    billing_cycle?: string;
+    next_billing_date?: string;
+    is_subscription?: boolean;
   }
 ) {
   const isSessionValid = await checkVaultSession();
@@ -278,7 +320,7 @@ export async function updatePassword(
     .eq('id', authUser.id)
     .single();
 
-  if (userData?.family_id !== currentEntry?.family_id) {
+  if (!userData?.family_id || userData.family_id !== currentEntry?.family_id) {
     throw new Error('Access denied');
   }
 
@@ -297,10 +339,45 @@ export async function updatePassword(
       password_enc,
       url: data.url || null,
       notes_enc,
+      cost: data.cost || null,
+      billing_cycle: data.billing_cycle || 'monthly',
+      next_billing_date: data.next_billing_date || null,
+      is_subscription: data.is_subscription || false,
     })
     .eq('id', id);
 
   if (error) throw error;
+
+  // Calendar sync for subscriptions (Delete old calendar event first, then insert new one if active)
+  await supabase
+    .from('calendar_events')
+    .delete()
+    .eq('family_id', userData.family_id)
+    .eq('metadata->>source', 'password_subscription')
+    .eq('metadata->>password_id', id);
+
+  if (data.is_subscription && data.next_billing_date) {
+    const title = `Subscription: ${data.title} (${data.billing_cycle})`;
+    const desc = `Upcoming renewal billing date for subscription: ${data.title}. Cost: ${data.cost || 'Unspecified'}`;
+
+    await supabase
+      .from('calendar_events')
+      .insert({
+        family_id: userData.family_id,
+        title,
+        description: desc,
+        type: 'reminder',
+        start_at: new Date(data.next_billing_date).toISOString(),
+        end_at: new Date(data.next_billing_date).toISOString(),
+        all_day: true,
+        created_by: authUser.id,
+        metadata: {
+          source: 'password_subscription',
+          password_id: id,
+        },
+      });
+  }
+
   return { success: true };
 }
 
