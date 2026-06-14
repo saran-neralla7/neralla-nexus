@@ -42,14 +42,12 @@ export default function DashboardPage() {
     const testWish = searchParams.get('testWish') === 'true';
 
     const checkMorningWish = () => {
-      const now = new Date();
-      const h = now.getHours();
-      const isMorning = h >= 5 && h < 12; // 5 AM to 12 PM
+      const justLoggedIn = typeof window !== 'undefined' && sessionStorage.getItem('nexus_just_logged_in') === 'true';
 
-      const todayStr = now.toISOString().split('T')[0];
-      const lastWished = localStorage.getItem('nexus_morning_wish_last_date');
-
-      if (testWish || (isMorning && lastWished !== todayStr)) {
+      if (testWish || justLoggedIn) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('nexus_just_logged_in');
+        }
         setShowMorningWish(true);
         // Autoplay the video once the element is rendered in the DOM
         setTimeout(() => {
@@ -499,14 +497,10 @@ export default function DashboardPage() {
             src="/after-login-welcome.mp4"
             playsInline
             onEnded={() => {
-              const todayStr = new Date().toISOString().split('T')[0];
-              localStorage.setItem('nexus_morning_wish_last_date', todayStr);
               setShowMorningWish(false);
             }}
             onError={(e) => {
               console.error("Morning wish video error, skipping:", e);
-              const todayStr = new Date().toISOString().split('T')[0];
-              localStorage.setItem('nexus_morning_wish_last_date', todayStr);
               setShowMorningWish(false);
             }}
             className="w-full h-full object-contain md:max-w-4xl"
@@ -517,8 +511,6 @@ export default function DashboardPage() {
               if (wishVideoRef.current) {
                 wishVideoRef.current.pause();
               }
-              const todayStr = new Date().toISOString().split('T')[0];
-              localStorage.setItem('nexus_morning_wish_last_date', todayStr);
               setShowMorningWish(false);
             }}
             className="absolute bottom-8 right-8 px-6 py-3 bg-white/5 border border-white/10 text-[#4fdbc8] font-semibold rounded-xl text-xs hover:bg-white/10 active:scale-[0.98] transition-all flex items-center gap-1 cursor-pointer shadow-lg z-50"

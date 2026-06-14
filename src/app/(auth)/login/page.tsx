@@ -52,6 +52,9 @@ function LoginForm() {
         return;
       }
       toast.success('Welcome back!');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('nexus_just_logged_in', 'true');
+      }
       router.push(redirectTo);
       router.refresh();
     } catch {
