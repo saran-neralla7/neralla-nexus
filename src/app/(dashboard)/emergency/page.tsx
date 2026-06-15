@@ -54,15 +54,52 @@ export default function EmergencyHubPage() {
 
   // SOS Trigger Action
   const handleTriggerSOS = () => {
-    startTransition(async () => {
-      try {
-        const res = await triggerSOSEmailAlert();
-        setSosTriggered(true);
-        toast.success(`🚨 SOS Alert broadcasted to ${res.notifiedCount} family members!`);
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to trigger SOS');
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by this browser.');
+      return;
+    }
+
+    const toastId = toast.loading('Acquiring high-accuracy GPS coordinates...');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+
+        startTransition(async () => {
+          try {
+            const response = await fetch('/api/emergency/panic', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ latitude, longitude }),
+            });
+
+            const res = await response.json();
+            if (!response.ok) {
+              throw new Error(res.error || 'Failed to trigger panic broadcast');
+            }
+
+            setSosTriggered(true);
+            toast.success(
+              `🚨 Panic Broadcast sent to ${res.alertedCount} family members! (Push: ${res.pushSent}, WhatsApp: ${res.whatsappSent})`,
+              { id: toastId, duration: 5000 }
+            );
+          } catch (err: any) {
+            toast.error(err.message || 'Failed to broadcast panic alert', { id: toastId });
+          }
+        });
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        toast.error(`Could not acquire location: ${error.message}. Please ensure location permissions are enabled.`, { id: toastId });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0,
       }
-    });
+    );
   };
 
   // PIN check for sensitive document view
@@ -594,7 +631,7 @@ export default function EmergencyHubPage() {
             </span>
             <h4 className="text-headline-sm font-bold text-white">Trigger Emergency Broadcast</h4>
             <p className="text-xs text-[#bbcac6] max-w-sm mx-auto leading-relaxed">
-              Clicking trigger will send immediate system and email alerts to all registered family members.
+              Clicking trigger will acquire your GPS coordinates and broadcast them along with your active medical profile to all registered family members via Push and WhatsApp.
             </p>
 
             <button
@@ -603,11 +640,11 @@ export default function EmergencyHubPage() {
               className={`py-3 px-6 rounded-xl font-bold w-full max-w-xs mx-auto flex items-center justify-center gap-2 transition-all shadow-lg ${
                 sosTriggered
                   ? 'bg-[#1a211f] text-[#ffb4ab] border border-red-500/20'
-                  : 'bg-red-600 hover:bg-red-700 text-white animate-bounce'
+                  : 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
               }`}
             >
-              <span className="material-symbols-outlined text-[18px]">notifications</span>
-              {sosTriggered ? 'SOS BROADCAST SENT' : 'TRIGGER EMERGENCY SOS'}
+              <span className="material-symbols-outlined text-[18px]">emergency_share</span>
+              {sosTriggered ? 'PANIC BROADCAST ACTIVE' : 'BROADCAST PANIC ALERT'}
             </button>
           </div>
 

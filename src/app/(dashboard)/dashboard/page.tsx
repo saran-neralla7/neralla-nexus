@@ -13,6 +13,7 @@ interface DashboardStats {
   policyCount: number;
   upcomingRenewals: any[];
   recentActivity: any[];
+  leaderboard: any[];
 }
 
 export default function DashboardPage() {
@@ -24,6 +25,7 @@ export default function DashboardPage() {
     policyCount: 0,
     upcomingRenewals: [],
     recentActivity: [],
+    leaderboard: [],
   });
   const [loading, setLoading] = useState(true);
   const [time, setTime] = useState(new Date());
@@ -82,11 +84,12 @@ export default function DashboardPage() {
       const supabase = createClient();
       const familyId = user?.family_id;
 
-      const [membersRes, docsRes, pwRes, policiesRes] = await Promise.all([
+      const [membersRes, docsRes, pwRes, policiesRes, leaderboardRes] = await Promise.all([
         supabase.from('family_members').select('id', { count: 'exact' }).eq('family_id', familyId!),
         supabase.from('documents').select('id', { count: 'exact' }).eq('family_id', familyId!).is('deleted_at', null),
         supabase.from('passwords').select('id', { count: 'exact' }).eq('family_id', familyId!).is('deleted_at', null),
         supabase.from('policies').select('*').eq('family_id', familyId!).not('expiry_date', 'is', null).order('expiry_date', { ascending: true }).limit(5),
+        supabase.from('users').select('id, full_name, avatar_url, points').eq('family_id', familyId!).order('points', { ascending: false }),
       ]);
 
       setStats({
@@ -96,6 +99,7 @@ export default function DashboardPage() {
         policyCount: 0,
         upcomingRenewals: policiesRes.data || [],
         recentActivity: [],
+        leaderboard: leaderboardRes.data || [],
       });
     } catch (err) {
       console.error('Dashboard stats error:', err);
@@ -254,7 +258,7 @@ export default function DashboardPage() {
       </section>
 
       {/* ============ MAIN GRID ============ */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Upcoming Renewals */}
         <div className="glass-card rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
@@ -346,6 +350,93 @@ export default function DashboardPage() {
                 </span>
               </Link>
             ))}
+          </div>
+        </div>
+
+        {/* Family Leaderboard */}
+        <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h2
+                className="flex items-center gap-2"
+                style={{ fontFamily: 'Geist, sans-serif', fontSize: '18px', fontWeight: '600', color: '#dde4e1' }}
+              >
+                <span className="material-symbols-outlined" style={{ color: '#ffb59e', fontSize: '20px' }}>leaderboard</span>
+                Leaderboard
+              </h2>
+              {user && stats.leaderboard.length > 0 && (
+                <span 
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-teal-500/10 text-[#4fdbc8] border border-teal-500/20"
+                  title="Your Current Title"
+                >
+                  {(() => {
+                    const myPoints = stats.leaderboard.find(u => u.id === user.id)?.points || 0;
+                    if (myPoints >= 500) return 'Legend 👑';
+                    if (myPoints >= 250) return 'Champion 🌟';
+                    if (myPoints >= 100) return 'Master ⚔️';
+                    if (myPoints >= 50) return 'Helper 🛠️';
+                    return 'Initiate 🌱';
+                  })()}
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {stats.leaderboard.length === 0 ? (
+                <div className="text-center py-6 text-[#859490] text-xs">
+                  No points logged yet. Complete chores to score!
+                </div>
+              ) : (
+                stats.leaderboard.slice(0, 4).map((member, index) => {
+                  const isCurrentUser = member.id === user?.id;
+                  const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+                  
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl transition-all"
+                      style={{ 
+                        background: isCurrentUser ? 'rgba(79, 219, 200, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+                        border: isCurrentUser ? '1px solid rgba(79, 219, 200, 0.15)' : '1px solid transparent'
+                      }}
+                    >
+                      <div className="flex gap-2.5 items-center min-w-0">
+                        <span 
+                          className="font-bold text-xs w-4 text-center flex-shrink-0" 
+                          style={{ color: rankColors[index] || '#859490' }}
+                        >
+                          {index + 1}
+                        </span>
+                        {member.avatar_url ? (
+                          <img
+                            src={member.avatar_url}
+                            alt={member.full_name}
+                            className="w-7 h-7 rounded-full object-cover border flex-shrink-0"
+                            style={{ borderColor: isCurrentUser ? '#4fdbc8' : 'rgba(255,255,255,0.1)' }}
+                          />
+                        ) : (
+                          <div 
+                            className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center font-bold text-xs flex-shrink-0"
+                            style={{ color: isCurrentUser ? '#4fdbc8' : '#859490' }}
+                          >
+                            {member.full_name[0]}
+                          </div>
+                        )}
+                        <p className="text-xs font-semibold truncate text-[#dde4e1]">
+                          {member.full_name.split(' ')[0]} {isCurrentUser && '(You)'}
+                        </p>
+                      </div>
+                      <span
+                        className="font-bold text-xs flex-shrink-0"
+                        style={{ color: isCurrentUser ? '#4fdbc8' : '#dde4e1' }}
+                      >
+                        {member.points || 0} pts
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
 

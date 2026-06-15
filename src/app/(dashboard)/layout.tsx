@@ -7,6 +7,7 @@ import NexusSidebar from '@/components/nexus/NexusSidebar';
 import NexusNavbar from '@/components/nexus/NexusNavbar';
 import MobileDock from '@/components/nexus/MobileDock';
 import GlobalSearch from '@/components/nexus/GlobalSearch';
+import { usePWA } from '@/hooks/usePWA';
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useUser();
   const { unreadCount } = useNotifications(user?.id);
+  const { isOffline } = usePWA();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -95,6 +97,14 @@ export default function DashboardLayout({
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto pb-24 md:pb-8">
+          {isOffline && (
+            <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2.5 flex items-center justify-between text-amber-200 text-xs font-semibold">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">wifi_off</span>
+                <span>Offline Mode — Changes will sync automatically once connection is restored</span>
+              </div>
+            </div>
+          )}
           {children}
         </main>
 

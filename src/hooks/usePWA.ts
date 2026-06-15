@@ -15,6 +15,7 @@ export function usePWA() {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     // 1. Register Service Worker
@@ -29,7 +30,7 @@ export function usePWA() {
         });
     }
 
-    // 2. Check if app is already running in standalone/installed mode
+    // 2. All window/client operations
     if (typeof window !== 'undefined') {
       const userAgent = window.navigator.userAgent || window.navigator.vendor || (window as any).opera;
       const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) || 
@@ -41,6 +42,37 @@ export function usePWA() {
 
       setIsIOS(isIOSDevice);
       setIsInstalled(isStandalone);
+      setIsOffline(!window.navigator.onLine);
+
+      const handleOnline = () => {
+        setIsOffline(false);
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'REPLAY_OFFLINE_MUTATIONS' });
+        }
+      };
+
+      const handleOffline = () => {
+        setIsOffline(true);
+      };
+
+      const handleBeforePrompt = (e: any) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+        setInstallPrompt(e);
+        setIsInstallable(true);
+      };
+
+      const handleAppInstalled = () => {
+        setIsInstalled(true);
+        setIsInstallable(false);
+        setInstallPrompt(null);
+        window.deferredPrompt = null;
+      };
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      window.addEventListener('beforeinstallprompt', handleBeforePrompt);
+      window.addEventListener('appinstalled', handleAppInstalled);
 
       // On iOS, beforeinstallprompt never fires. We make it installable if it's iOS and not already standalone!
       if (isIOSDevice && !isStandalone) {
@@ -55,33 +87,15 @@ export function usePWA() {
         setInstallPrompt(e);
         setIsInstallable(true);
       };
-    }
 
-    // 3. Keep fallback listeners for safety
-    const handleBeforePrompt = (e: any) => {
-      e.preventDefault();
-      window.deferredPrompt = e;
-      setInstallPrompt(e);
-      setIsInstallable(true);
-    };
-
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setIsInstallable(false);
-      setInstallPrompt(null);
-      window.deferredPrompt = null;
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforePrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      if (typeof window !== 'undefined') {
+      return () => {
         window.onBeforeInstallPrompt = null;
-      }
-      window.removeEventListener('beforeinstallprompt', handleBeforePrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+        window.removeEventListener('beforeinstallprompt', handleBeforePrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+      };
+    }
   }, []);
 
   const installApp = async () => {
@@ -105,5 +119,5 @@ export function usePWA() {
     return false;
   };
 
-  return { isInstallable, isInstalled, isIOS, installApp };
+  return { isInstallable, isInstalled, isIOS, isOffline, installApp };
 }
