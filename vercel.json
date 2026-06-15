@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/occasions/wish-cron",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/notifications/digest",
+      "schedule": "0 18 * * 0"
+    },
+    {
+      "path": "/api/medication/cron",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
