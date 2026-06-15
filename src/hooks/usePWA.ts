@@ -20,7 +20,7 @@ export function usePWA() {
     // 1. Register Service Worker
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker
-        .register('/sw.js')
+        .register('/sw.js?v=2')
         .then((reg) => {
           console.log('Nexus SW registered with scope:', reg.scope);
         })

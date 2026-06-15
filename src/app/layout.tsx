@@ -80,7 +80,7 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
+                  navigator.serviceWorker.register('/sw.js?v=2')
                     .then(reg => console.log('Nexus SW registered from layout:', reg.scope))
                     .catch(err => console.error('Nexus SW registration failed from layout:', err));
                 });

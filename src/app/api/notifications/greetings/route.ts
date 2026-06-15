@@ -52,30 +52,47 @@ export async function GET(request: Request) {
         nowInTz = new Date();
       }
 
+      const year = nowInTz.getFullYear();
+      const month = String(nowInTz.getMonth() + 1).padStart(2, '0');
+      const day = String(nowInTz.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+
       const hour = nowInTz.getHours();
       const minute = nowInTz.getMinutes();
-      const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      const minutesSinceMidnight = hour * 60 + minute;
 
-      // Check if current time matches greeting slot
+      // Determine greeting slot based on current time window
+      let greetingKey = ''; // 'morning' | 'afternoon' | 'evening' | 'night'
       let greetingTitle = '';
       let greetingBody = '';
 
-      if (timeStr === '06:00') {
+      // Morning window: 06:00 - 11:59 (360 - 719 mins)
+      if (minutesSinceMidnight >= 360 && minutesSinceMidnight < 720) {
+        greetingKey = 'morning';
         greetingTitle = 'Good Morning! ☀️';
         greetingBody = 'Wishing you a wonderful, energized, and productive day ahead.';
-      } else if (timeStr === '12:30') {
+      }
+      // Afternoon window: 12:30 - 15:59 (750 - 959 mins)
+      else if (minutesSinceMidnight >= 750 && minutesSinceMidnight < 960) {
+        greetingKey = 'afternoon';
         greetingTitle = 'Good Afternoon! 🌤️';
         greetingBody = 'Hope you are having a great day. Don\'t forget to take a healthy lunch break!';
-      } else if (timeStr === '16:00') {
+      }
+      // Evening window: 16:00 - 21:59 (960 - 1319 mins)
+      else if (minutesSinceMidnight >= 960 && minutesSinceMidnight < 1320) {
+        greetingKey = 'evening';
         greetingTitle = 'Good Evening! 🌇';
         greetingBody = 'Hope your day went well. Take a moment to stretch and unwind.';
-      } else if (timeStr === '22:00') {
+      }
+      // Night window: 22:00 - 23:59 (1320 - 1439 mins)
+      else if (minutesSinceMidnight >= 1320 && minutesSinceMidnight < 1440) {
+        greetingKey = 'night';
         greetingTitle = 'Good Night! 🌙';
         greetingBody = 'Time to switch off screens, relax, and get some restful sleep. Sweet dreams!';
       }
 
       // If it doesn't match any schedule, proceed to the next family
-      if (!greetingTitle) continue;
+      if (!greetingKey) continue;
 
       // 3. Fetch the family owner's details to retrieve their avatar
       const { data: owner } = await adminSupabase
@@ -97,6 +114,26 @@ export async function GET(request: Request) {
       if (userErr || !users) continue;
 
       for (const u of users) {
+        // Check if we already sent a greeting of this type today
+        const { data: existingNotif, error: checkErr } = await adminSupabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', u.id)
+          .eq('type', 'greeting')
+          .eq('data->>greeting_type', greetingKey)
+          .eq('data->>date', todayStr)
+          .maybeSingle();
+
+        if (checkErr) {
+          console.error(`Error checking duplicate greeting for user ${u.id}:`, checkErr);
+          continue;
+        }
+
+        if (existingNotif) {
+          // Already sent today, skip
+          continue;
+        }
+
         // Send notification using owner's avatar as the icon
         const pushResult = await sendPushNotification(
           u.id,
@@ -107,6 +144,26 @@ export async function GET(request: Request) {
             icon: avatarUrl,
           }
         );
+
+        // Record in the database to prevent duplicate notifications and show in in-app notifications
+        const { error: insertErr } = await adminSupabase
+          .from('notifications')
+          .insert({
+            family_id: family.id,
+            user_id: u.id,
+            type: 'greeting',
+            title: greetingTitle,
+            body: `Hey ${u.full_name.split(' ')[0]}, ${greetingBody}`,
+            data: {
+              greeting_type: greetingKey,
+              date: todayStr
+            }
+          });
+
+        if (insertErr) {
+          console.error(`Error inserting greeting notification for user ${u.id}:`, insertErr);
+        }
+
         if (pushResult.success && pushResult.sent && pushResult.sent > 0) {
           totalSent += pushResult.sent;
         }

@@ -32,7 +32,14 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes that don't require auth
-  const publicRoutes = ['/login', '/invite', '/forgot-password'];
+  const publicRoutes = [
+    '/login',
+    '/invite',
+    '/forgot-password',
+    '/api/auth/passkey/login',
+    '/api/notifications/greetings',
+    '/api/medication/cron',
+  ];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   // Auth routes — redirect to dashboard if already logged in
