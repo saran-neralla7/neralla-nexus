@@ -103,9 +103,10 @@ export async function GET(request: Request) {
           const title = `Reminder Alert ⏰`;
           const body = rem.description ? `${rem.title}: ${rem.description}` : rem.title;
           const url = `/reminders`;
+          const recipientId = rem.assigned_to || rem.created_by;
 
           const pushResult = await sendPushNotification(
-            rem.created_by,
+            recipientId,
             title,
             body,
             url
@@ -132,7 +133,7 @@ export async function GET(request: Request) {
               .from('notifications')
               .insert({
                 family_id: family.id,
-                user_id: rem.created_by,
+                user_id: recipientId,
                 type: 'system',
                 title: title,
                 body: body,

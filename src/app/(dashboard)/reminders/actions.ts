@@ -19,21 +19,33 @@ async function getUserProfile(supabase: any, userId: string) {
 }
 
 /**
- * Fetches all reminders for the family
+ * Fetches all reminders for the family.
+ * Regular members only see reminders assigned to them or created by them.
+ * Owners/Admins see all family reminders.
  */
-export async function fetchReminders() {
+export async function fetchReminders(memberUserId?: string) {
   const supabase = await createClient();
   const authUser = await getAuthUser(supabase);
   const profile = await getUserProfile(supabase, authUser.id);
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('reminders')
     .select(`
       *,
-      creator:users!reminders_created_by_fkey (id, full_name, avatar_url)
+      creator:users!reminders_created_by_fkey (id, full_name, avatar_url),
+      assigned_user:users!reminders_assigned_to_fkey (id, full_name, avatar_url)
     `)
-    .eq('family_id', profile.family_id)
-    .order('scheduled_time', { ascending: true });
+    .eq('family_id', profile.family_id);
+
+  const isOwner = profile.role === 'owner' || profile.role === 'admin';
+
+  if (!isOwner) {
+    query = query.or(`assigned_to.eq.${authUser.id},created_by.eq.${authUser.id}`);
+  } else if (memberUserId && memberUserId !== 'all') {
+    query = query.eq('assigned_to', memberUserId);
+  }
+
+  const { data, error } = await query.order('scheduled_time', { ascending: true });
 
   if (error) {
     console.error('Error fetching reminders:', error);
@@ -44,7 +56,8 @@ export async function fetchReminders() {
 }
 
 /**
- * Creates a new reminder
+ * Creates a new reminder.
+ * Regular members can only assign reminders to themselves.
  */
 export async function createReminder(data: {
   title: string;
@@ -53,10 +66,19 @@ export async function createReminder(data: {
   frequency?: string;
   days_of_week?: number[];
   is_active?: boolean;
+  assigned_to?: string;
 }) {
   const supabase = await createClient();
   const authUser = await getAuthUser(supabase);
   const profile = await getUserProfile(supabase, authUser.id);
+
+  let assignedId = data.assigned_to || authUser.id;
+  const isOwner = profile.role === 'owner' || profile.role === 'admin';
+
+  // Regular members can only assign to themselves
+  if (!isOwner) {
+    assignedId = authUser.id;
+  }
 
   const { error } = await supabase
     .from('reminders')
@@ -69,6 +91,7 @@ export async function createReminder(data: {
       days_of_week: data.days_of_week || null,
       is_active: data.is_active !== undefined ? data.is_active : true,
       created_by: authUser.id,
+      assigned_to: assignedId,
     });
 
   if (error) {
@@ -80,7 +103,7 @@ export async function createReminder(data: {
 }
 
 /**
- * Updates an existing reminder
+ * Updates an existing reminder.
  */
 export async function updateReminder(
   id: string,
@@ -91,6 +114,7 @@ export async function updateReminder(
     frequency?: string;
     days_of_week?: number[];
     is_active?: boolean;
+    assigned_to?: string;
   }
 ) {
   const supabase = await createClient();
@@ -100,12 +124,26 @@ export async function updateReminder(
   // First verify reminder belongs to family
   const { data: reminder, error: fetchErr } = await supabase
     .from('reminders')
-    .select('family_id')
+    .select('family_id, created_by, assigned_to')
     .eq('id', id)
     .single();
 
   if (fetchErr || !reminder) throw new Error('Reminder not found');
   if (reminder.family_id !== profile.family_id) throw new Error('Access denied');
+
+  const isOwner = profile.role === 'owner' || profile.role === 'admin';
+  const isCreator = reminder.created_by === authUser.id;
+  const isAssigned = reminder.assigned_to === authUser.id;
+
+  if (!isOwner && !isCreator && !isAssigned) {
+    throw new Error('Access denied');
+  }
+
+  let assignedId = data.assigned_to;
+  if (!isOwner) {
+    // Regular members cannot change assignment
+    assignedId = reminder.assigned_to;
+  }
 
   const { error } = await supabase
     .from('reminders')
@@ -116,6 +154,7 @@ export async function updateReminder(
       frequency: data.frequency,
       days_of_week: data.days_of_week,
       is_active: data.is_active,
+      assigned_to: assignedId,
     })
     .eq('id', id);
 
@@ -128,7 +167,7 @@ export async function updateReminder(
 }
 
 /**
- * Deletes a reminder
+ * Deletes a reminder.
  */
 export async function deleteReminder(id: string) {
   const supabase = await createClient();
@@ -138,12 +177,19 @@ export async function deleteReminder(id: string) {
   // First verify reminder belongs to family
   const { data: reminder, error: fetchErr } = await supabase
     .from('reminders')
-    .select('family_id')
+    .select('family_id, created_by')
     .eq('id', id)
     .single();
 
   if (fetchErr || !reminder) throw new Error('Reminder not found');
   if (reminder.family_id !== profile.family_id) throw new Error('Access denied');
+
+  const isOwner = profile.role === 'owner' || profile.role === 'admin';
+  const isCreator = reminder.created_by === authUser.id;
+
+  if (!isOwner && !isCreator) {
+    throw new Error('Access denied. You can only delete reminders created by you.');
+  }
 
   const { error } = await supabase
     .from('reminders')

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useUser } from '@/hooks/useUser';
 import { toast } from 'sonner';
 import { getInitials, getAvatarStyle } from '@/lib/utils';
@@ -30,6 +29,10 @@ export default function RemindersPage() {
   // Family Members
   const [members, setMembers] = useState<any[]>([]);
 
+  // Filters
+  const [selectedGenMemberFilter, setSelectedGenMemberFilter] = useState('all');
+  const [selectedMedMemberFilter, setSelectedMedMemberFilter] = useState('all');
+
   // Reminders States
   const [reminders, setReminders] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
@@ -47,6 +50,7 @@ export default function RemindersPage() {
   const [genTime, setGenTime] = useState('08:00');
   const [genFreq, setGenFreq] = useState('daily');
   const [genDays, setGenDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 0]);
+  const [genAssignedTo, setGenAssignedTo] = useState('');
 
   // Medication Reminder Form State
   const [medId, setMedId] = useState<string | null>(null);
@@ -57,35 +61,52 @@ export default function RemindersPage() {
   const [medFreq, setMedFreq] = useState('daily');
   const [medDays, setMedDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 0]);
 
+  // Load initial members and medication reminders
   useEffect(() => {
     if (user) {
-      loadAllData();
+      loadMembersAndMeds();
     }
   }, [user]);
 
-  const loadAllData = async () => {
+  // Load reminders when filter changes
+  useEffect(() => {
+    if (user) {
+      loadGeneralReminders();
+    }
+  }, [user, selectedGenMemberFilter]);
+
+  const loadMembersAndMeds = async () => {
     try {
       setLoading(true);
-      // Fetch Family Members
       const membersData = await fetchFamilyMembersForExpenses();
       setMembers(membersData || []);
 
       if (membersData && membersData.length > 0) {
         setMedMemberId(membersData[0].id);
+        setGenAssignedTo(user?.id || membersData[0].id);
       }
 
-      // Fetch General Reminders
-      const generalData = await fetchReminders();
-      setReminders(generalData);
-
-      // Fetch Medication Reminders
       const medData = await fetchMedicationReminders();
       setMedications(medData);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to load reminders data');
+      toast.error(err.message || 'Failed to load member/medication details');
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadGeneralReminders = async () => {
+    try {
+      const generalData = await fetchReminders(selectedGenMemberFilter);
+      setReminders(generalData);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to fetch reminders');
+    }
+  };
+
+  const loadAllData = async () => {
+    await loadMembersAndMeds();
+    await loadGeneralReminders();
   };
 
   // General Reminders Handlers
@@ -104,6 +125,7 @@ export default function RemindersPage() {
           scheduled_time: genTime + ':00',
           frequency: genFreq,
           days_of_week: genFreq === 'weekly' ? genDays : undefined,
+          assigned_to: genAssignedTo,
         };
 
         if (genId) {
@@ -116,7 +138,7 @@ export default function RemindersPage() {
 
         setShowGeneralModal(false);
         resetGeneralForm();
-        loadAllData();
+        loadGeneralReminders();
       } catch (err: any) {
         toast.error(err.message || 'Failed to save reminder');
       }
@@ -130,6 +152,7 @@ export default function RemindersPage() {
     setGenTime(rem.scheduled_time.slice(0, 5));
     setGenFreq(rem.frequency);
     setGenDays(rem.days_of_week || [1, 2, 3, 4, 5, 6, 0]);
+    setGenAssignedTo(rem.assigned_to || user?.id || '');
     setShowGeneralModal(true);
   };
 
@@ -137,7 +160,7 @@ export default function RemindersPage() {
     try {
       await updateReminder(rem.id, { is_active: !rem.is_active });
       toast.success(rem.is_active ? 'Reminder disabled' : 'Reminder enabled');
-      loadAllData();
+      loadGeneralReminders();
     } catch (err: any) {
       toast.error(err.message || 'Failed to toggle status');
     }
@@ -240,6 +263,7 @@ export default function RemindersPage() {
     setGenTime('08:00');
     setGenFreq('daily');
     setGenDays([1, 2, 3, 4, 5, 6, 0]);
+    setGenAssignedTo(user?.id || '');
   };
 
   const resetMedForm = () => {
@@ -263,6 +287,8 @@ export default function RemindersPage() {
       setter([...currentDays, day].sort());
     }
   };
+
+  const isOwner = user?.role === 'owner' || user?.role === 'admin';
 
   const DAYS = [
     { label: 'S', value: 0 },
@@ -288,21 +314,57 @@ export default function RemindersPage() {
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            if (activeTab === 'general') {
-              resetGeneralForm();
-              setShowGeneralModal(true);
-            } else {
-              resetMedForm();
-              setShowMedModal(true);
-            }
-          }}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[#4fdbc8] text-black hover:brightness-110 shadow-lg shadow-[#4fdbc8]/15 transition-all cursor-pointer"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          <span>{activeTab === 'general' ? 'Add Reminder' : 'Add Medication'}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Owner General Reminder Assignee Filter */}
+          {isOwner && members.length > 0 && activeTab === 'general' && (
+            <div className="flex items-center gap-2">
+              <span className="text-body-sm text-[#859490]">Assignee:</span>
+              <select
+                value={selectedGenMemberFilter}
+                onChange={(e) => setSelectedGenMemberFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-white/10 bg-[#090f0e] text-body-sm text-white focus:outline-none focus:border-[#4fdbc8] cursor-pointer"
+              >
+                <option value="all">All Members</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>{m.full_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Owner Medication Assignee Filter */}
+          {isOwner && members.length > 0 && activeTab === 'medication' && (
+            <div className="flex items-center gap-2">
+              <span className="text-body-sm text-[#859490]">Member:</span>
+              <select
+                value={selectedMedMemberFilter}
+                onChange={(e) => setSelectedMedMemberFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-white/10 bg-[#090f0e] text-body-sm text-white focus:outline-none focus:border-[#4fdbc8] cursor-pointer"
+              >
+                <option value="all">All Members</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>{m.full_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              if (activeTab === 'general') {
+                resetGeneralForm();
+                setShowGeneralModal(true);
+              } else {
+                resetMedForm();
+                setShowMedModal(true);
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[#4fdbc8] text-black hover:brightness-110 shadow-lg shadow-[#4fdbc8]/15 transition-all cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            <span>{activeTab === 'general' ? 'Add Reminder' : 'Add Medication'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -351,7 +413,7 @@ export default function RemindersPage() {
             {reminders.map((rem) => (
               <div
                 key={rem.id}
-                className={`glass-card rounded-2xl p-5 border transition-all flex flex-col justify-between h-48 hover:bg-white/[0.02] ${
+                className={`glass-card rounded-2xl p-5 border transition-all flex flex-col justify-between h-[210px] hover:bg-white/[0.02] ${
                   rem.is_active ? 'border-white/10' : 'border-white/5 opacity-55'
                 }`}
               >
@@ -369,6 +431,19 @@ export default function RemindersPage() {
                   </div>
                   {rem.description && (
                     <p className="text-body-sm text-[#bbcac6] line-clamp-2 mt-1.5 leading-relaxed">{rem.description}</p>
+                  )}
+                  {rem.assigned_user && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                        style={{ background: getAvatarStyle(rem.assigned_user.full_name) }}
+                      >
+                        {getInitials(rem.assigned_user.full_name)}
+                      </div>
+                      <span className="text-[11px] text-[#859490] font-semibold">
+                        Assigned to: {rem.assigned_user.full_name.split(' ')[0]}
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -407,7 +482,7 @@ export default function RemindersPage() {
         )
       ) : (
         /* Medication Reminders Grid */
-        medications.length === 0 ? (
+        medications.filter(med => selectedMedMemberFilter === 'all' || med.member_id === selectedMedMemberFilter).length === 0 ? (
           <div className="glass-card rounded-2xl p-12 text-center border border-white/5 bg-white/[0.01]">
             <span className="material-symbols-outlined text-[48px] text-[#859490] mb-3">vaccines</span>
             <h3 className="text-body-lg font-semibold text-[#dde4e1]">No Medication Reminders</h3>
@@ -417,78 +492,80 @@ export default function RemindersPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {medications.map((med) => {
-              const member = members.find((m) => m.id === med.member_id);
-              return (
-                <div
-                  key={med.id}
-                  className={`glass-card rounded-2xl p-5 border transition-all flex flex-col justify-between h-48 hover:bg-white/[0.02] ${
-                    med.is_active ? 'border-white/10' : 'border-white/5 opacity-55'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-xs text-[#ffb59e]">pill</span>
-                        <h3 className="text-body-md font-semibold text-white truncate">{med.name}</h3>
-                      </div>
-                      <button
-                        onClick={() => handleToggleMedication(med)}
-                        className={`material-symbols-outlined text-[24px] cursor-pointer transition-colors ${
-                          med.is_active ? 'text-[#4fdbc8]' : 'text-[#859490]'
-                        }`}
-                      >
-                        {med.is_active ? 'toggle_on' : 'toggle_off'}
-                      </button>
-                    </div>
-                    {med.dosage && (
-                      <p className="text-body-sm text-[#bbcac6] mt-1.5 leading-relaxed">Dosage: {med.dosage}</p>
-                    )}
-                    {member && (
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
-                          style={{ background: getAvatarStyle(member.full_name) }}
-                        >
-                          {getInitials(member.full_name)}
+            {medications
+              .filter(med => selectedMedMemberFilter === 'all' || med.member_id === selectedMedMemberFilter)
+              .map((med) => {
+                const member = members.find((m) => m.id === med.member_id);
+                return (
+                  <div
+                    key={med.id}
+                    className={`glass-card rounded-2xl p-5 border transition-all flex flex-col justify-between h-48 hover:bg-white/[0.02] ${
+                      med.is_active ? 'border-white/10' : 'border-white/5 opacity-55'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-xs text-[#ffb59e]">pill</span>
+                          <h3 className="text-body-md font-semibold text-white truncate">{med.name}</h3>
                         </div>
-                        <span className="text-[11px] text-[#859490] font-semibold">For {member.full_name}</span>
+                        <button
+                          onClick={() => handleToggleMedication(med)}
+                          className={`material-symbols-outlined text-[24px] cursor-pointer transition-colors ${
+                            med.is_active ? 'text-[#4fdbc8]' : 'text-[#859490]'
+                          }`}
+                        >
+                          {med.is_active ? 'toggle_on' : 'toggle_off'}
+                        </button>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5 text-label-sm text-[#ffb59e]">
-                        <span className="material-symbols-outlined text-[14px]">schedule</span>
-                        <span className="font-semibold">{med.scheduled_time.slice(0, 5)}</span>
-                      </div>
-                      <span className="text-[10px] text-[#859490] uppercase tracking-wide">
-                        {med.frequency}
-                        {med.frequency === 'weekly' && med.days_of_week && (
-                          ` • ${med.days_of_week.map((d: number) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
-                        )}
-                      </span>
+                      {med.dosage && (
+                        <p className="text-body-sm text-[#bbcac6] mt-1.5 leading-relaxed">Dosage: {med.dosage}</p>
+                      )}
+                      {member && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                            style={{ background: getAvatarStyle(member.full_name) }}
+                          >
+                            {getInitials(member.full_name)}
+                          </div>
+                          <span className="text-[11px] text-[#859490] font-semibold">For {member.full_name}</span>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleEditMedication(med)}
-                        className="p-2 hover:bg-white/5 rounded-xl text-[#bbcac6] hover:text-[#4fdbc8] transition-colors cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">edit</span>
-                      </button>
-                      <button
-                        onClick={() => triggerDelete(med.id, 'medication')}
-                        className="p-2 hover:bg-white/5 rounded-xl text-[#859490] hover:text-red-400 transition-colors cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 text-label-sm text-[#ffb59e]">
+                          <span className="material-symbols-outlined text-[14px]">schedule</span>
+                          <span className="font-semibold">{med.scheduled_time.slice(0, 5)}</span>
+                        </div>
+                        <span className="text-[10px] text-[#859490] uppercase tracking-wide">
+                          {med.frequency}
+                          {med.frequency === 'weekly' && med.days_of_week && (
+                            ` • ${med.days_of_week.map((d: number) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEditMedication(med)}
+                          className="p-2 hover:bg-white/5 rounded-xl text-[#bbcac6] hover:text-[#4fdbc8] transition-colors cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        <button
+                          onClick={() => triggerDelete(med.id, 'medication')}
+                          className="p-2 hover:bg-white/5 rounded-xl text-[#859490] hover:text-red-400 transition-colors cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )
       )}
@@ -522,6 +599,22 @@ export default function RemindersPage() {
               className="w-full input-glass px-3 py-2.5 rounded-xl text-body-sm text-white resize-none"
             />
           </div>
+
+          {/* User Assignment (Only visible to Owner/Admin) */}
+          {isOwner && members.length > 0 && (
+            <div className="space-y-1">
+              <label className="text-body-sm text-[#bbcac6]">Assign Reminder To</label>
+              <select
+                value={genAssignedTo}
+                onChange={(e) => setGenAssignedTo(e.target.value)}
+                className="w-full input-glass px-3 py-2.5 rounded-xl text-body-sm bg-[#161d1b] text-white"
+              >
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>{m.full_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
