@@ -23,6 +23,7 @@ export default function TodosPage() {
   // Family members list
   const [members, setMembers] = useState<any[]>([]);
   const [selectedFilterMember, setSelectedFilterMember] = useState<string>('all');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'));
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -125,17 +126,42 @@ export default function TodosPage() {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setDueDate('');
+    setDueDate(selectedDate);
     setPriority('medium');
     setAssignedTo(user?.id || '');
   };
 
   const isOwner = user?.role === 'owner' || user?.role === 'admin';
 
+  // Date Separation and Rollover Logic
+  const filteredTodos = todos.filter((task) => {
+    const isCompleted = task.status === 'completed';
+    const targetDateStr = selectedDate; // YYYY-MM-DD
+    
+    if (isCompleted) {
+      // Completed tasks stay back on the date they were completed (completed_at or updated_at) OR their due date.
+      const completedDate = task.completed_at 
+        ? new Date(task.completed_at).toLocaleDateString('en-CA') 
+        : new Date(task.updated_at).toLocaleDateString('en-CA');
+         
+      const dueDateMatches = task.due_date === targetDateStr;
+      const completionDateMatches = completedDate === targetDateStr;
+      
+      return completionDateMatches || dueDateMatches;
+    } else {
+      // Pending/ongoing tasks move to the next day until completed (i.e. visible on targetDateStr if due_date <= targetDateStr)
+      if (!task.due_date) {
+        // Tasks without a due date are visible on all days until completed
+        return true;
+      }
+      return task.due_date <= targetDateStr;
+    }
+  });
+
   // Kanban Columns
-  const todoTasks = todos.filter((t) => t.status === 'todo');
-  const inProgressTasks = todos.filter((t) => t.status === 'in_progress');
-  const completedTasks = todos.filter((t) => t.status === 'completed');
+  const todoTasks = filteredTodos.filter((t) => t.status === 'todo');
+  const inProgressTasks = filteredTodos.filter((t) => t.status === 'in_progress');
+  const completedTasks = filteredTodos.filter((t) => t.status === 'completed');
 
   const renderTaskCard = (task: any) => {
     const isOverdue = task.due_date && new Date(task.due_date).getTime() < Date.now() - 86400000 && task.status !== 'completed';
@@ -259,7 +285,18 @@ export default function TodosPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Date Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-body-sm text-[#859490]">Date:</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-white/10 bg-[#090f0e] text-body-sm text-white focus:outline-none focus:border-[#4fdbc8] cursor-pointer"
+            />
+          </div>
+
           {/* Owner Filter Selector */}
           {isOwner && members.length > 0 && (
             <div className="flex items-center gap-2">
@@ -267,7 +304,7 @@ export default function TodosPage() {
               <select
                 value={selectedFilterMember}
                 onChange={(e) => setSelectedFilterMember(e.target.value)}
-                className="input-glass px-3 py-2.5 rounded-xl text-body-sm bg-[#161d1b] text-white"
+                className="px-3 py-2.5 rounded-xl border border-white/10 bg-[#090f0e] text-body-sm text-white focus:outline-none focus:border-[#4fdbc8] cursor-pointer"
               >
                 <option value="all">All Members</option>
                 {members.map((m) => (
@@ -279,7 +316,7 @@ export default function TodosPage() {
 
           <button
             onClick={() => { resetForm(); setShowAddModal(true); }}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[#4fdbc8] text-black hover:brightness-110 shadow-lg shadow-[#4fdbc8]/15 transition-all"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-[#4fdbc8] text-black hover:brightness-110 shadow-lg shadow-[#4fdbc8]/15 transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
             Create Task

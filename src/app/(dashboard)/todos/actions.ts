@@ -126,12 +126,20 @@ export async function updateTodoStatus(todoId: string, status: 'todo' | 'in_prog
     throw new Error('Access denied. You can only update status for tasks assigned or created by you.');
   }
 
+  const updateData: any = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (status === 'completed') {
+    updateData.completed_at = new Date().toISOString();
+  } else {
+    updateData.completed_at = null;
+  }
+
   const { error } = await supabase
     .from('todos')
-    .update({
-      status,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', todoId);
 
   if (error) throw error;

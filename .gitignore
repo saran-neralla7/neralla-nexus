@@ -36,3 +36,8 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# Scratch / Temp Files
+scratch/
+extracted_history.txt
+search_convo.js

@@ -41,6 +41,7 @@ export async function proxy(request: NextRequest) {
     '/api/medication/cron',
     '/api/occasions/wish-cron',
     '/api/notifications/digest',
+    '/api/notifications/reminders',
   ];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 

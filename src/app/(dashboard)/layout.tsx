@@ -32,6 +32,32 @@ export default function DashboardLayout({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Background trigger for daily greetings and reminders (throttled to 5 mins)
+  useEffect(() => {
+    if (loading || !user) return;
+
+    const runBackgroundCrons = async () => {
+      try {
+        const lastPing = localStorage.getItem('nexus_cron_last_ping');
+        const now = Date.now();
+        if (!lastPing || now - parseInt(lastPing, 10) > 5 * 60 * 1000) {
+          localStorage.setItem('nexus_cron_last_ping', now.toString());
+          
+          // Trigger routines in parallel and handle exceptions gracefully
+          await Promise.all([
+            fetch('/api/notifications/greetings').catch(() => {}),
+            fetch('/api/medication/cron').catch(() => {}),
+            fetch('/api/notifications/reminders').catch(() => {}),
+          ]);
+        }
+      } catch (err) {
+        console.error('Failed to run background cron triggers:', err);
+      }
+    };
+
+    runBackgroundCrons();
+  }, [user, loading]);
+
   if (loading) {
     return (
       <div
